@@ -21,52 +21,99 @@ function formatDate(pubDate) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
+  // handle GET biar gak error
+  if (req.method === "GET") {
     return res.status(200).json({
-      message: "Gunakan POST untuk endpoint ini"
+      message: "API crawl-all aktif (gunakan POST)"
     });
   }
 
-  const { primaryKeywords, secondaryKeywords } = req.body;
-
-  const results = [];
-
-  for (const primary of primaryKeywords) {
-    for (const secondary of secondaryKeywords) {
-      const query = `${primary} ${secondary}`;
-
-      try {
-        const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=id&gl=ID&ceid=ID:id`;
-
-        const response = await axios.get(url);
-
-        const parsed = await new Promise((resolve, reject) => {
-          parseString(response.data, (err, result) => {
-            if (err) reject(err);
-            else resolve(result);
-          });
-        });
-
-        const items = parsed?.rss?.channel?.[0]?.item || [];
-
-        items.forEach(item => {
-          results.push({
-            title: item.title?.[0],
-            link: item.link?.[0],
-            date: formatDate(item.pubDate?.[0]),
-            source: extractSource(item.link?.[0])
-          });
-        });
-
-      } catch (err) {
-        console.log(err.message);
-      }
-    }
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  return res.status(200).json({
-    success: true,
-    total: results.length,
-    results
-  });
+  try {
+    const { primaryKeywords, secondaryKeywords } = req.body;
+
+    const results = [];
+    const seen = new Set();
+
+    for (const primary of primaryKeywords) {
+      for (const secondary of secondaryKeywords) {
+        const query = `${primary} ${secondary}`;
+
+        // NEWS
+        try {
+          const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=id&gl=ID&ceid=ID:id`;
+
+          const response = await axios.get(url);
+
+          const parsed = await new Promise((resolve, reject) => {
+            parseString(response.data, (err, result) => {
+              if (err) reject(err);
+              else resolve(result);
+            });
+          });
+
+          const items = parsed?.rss?.channel?.[0]?.item || [];
+
+          items.forEach(item => {
+            const link = item.link?.[0];
+            if (!link || seen.has(link)) return;
+
+            seen.add(link);
+
+            results.push({
+              type: "news",
+              title: item.title?.[0],
+              link,
+              date: formatDate(item.pubDate?.[0]),
+              source: extractSource(link)
+            });
+          });
+
+        } catch (err) {
+          console.log("News error:", err.message);
+        }
+
+        // JOURNAL
+        try {
+          const response = await axios.get("https://api.openalex.org/works", {
+            params: { search: query, per_page: 5 }
+          });
+
+          response.data.results.forEach(p => {
+            const link = p.primary_location?.landing_page_url || '';
+            if (!link || seen.has(link)) return;
+
+            seen.add(link);
+
+            results.push({
+              type: "journal",
+              title: p.title,
+              link,
+              date: p.publication_year || '-',
+              source: "Journal"
+            });
+          });
+
+        } catch (err) {
+          console.log("Journal error:", err.message);
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      total: results.length,
+      results
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      error: "Server error",
+      detail: err.message
+    });
+  }
 }
