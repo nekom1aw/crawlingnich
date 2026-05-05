@@ -1,0 +1,22 @@
+{
+  "name": "crawler-berita-tailwind",
+  "version": "1.0.0",
+  "description": "Crawling berita dengan Tailwind CSS",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "^4.2.2",
+    "@tailwindcss/vite": "^4.2.2",
+    "axios": "^1.15.0",
+    "cheerio": "^1.2.0",
+    "express": "^4.22.1",
+    "tailwindcss": "^4.2.2",
+    "xml2js": "^0.6.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

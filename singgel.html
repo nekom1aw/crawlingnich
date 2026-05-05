@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Image Zoom</title>
+
+    <link href="src/output.css" rel="stylesheet">
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body class="bg-[#e9e4dc] p-6 font-sans">
+
+    <div x-data="{
+    src: 'images/DJI_20250511122956_0285_D (1).jpg',
+    title: 'Kawasan Hutan Produksi Terbatas...',
+    sub: 'Berau, Mei 2025',
+
+    popupOpen: false,
+
+    zoom: 1,
+    isDragging: false,
+    hasMoved: false,
+
+    startX: 0,
+    startY: 0,
+    currentX: 0,
+    currentY: 0,
+
+    openPopup() {
+        this.popupOpen = true;
+        this.zoom = 1;
+        this.currentX = 0;
+        this.currentY = 0;
+    },
+
+    transform() {
+        return `
+            transform: translate3d(${this.currentX}px, ${this.currentY}px, 0) scale(${this.zoom});
+            will-change: transform;
+            backface-visibility: hidden;
+        `;
+    },
+
+    isInside(e) {
+        let rect = this.$refs.img.getBoundingClientRect();
+        return (
+            e.clientX >= rect.left &&
+            e.clientX <= rect.right &&
+            e.clientY >= rect.top &&
+            e.clientY <= rect.bottom
+        );
+    }
+}" class="max-w-[980px] mx-auto">
+
+        <!-- IMAGE -->
+        <div class="w-full aspect-[16/9] overflow-hidden">
+            <img :src="src" @click="openPopup"
+                class="w-full h-full object-cover cursor-pointer hover:opacity-90 transition">
+        </div>
+
+        <!-- CAPTION -->
+        <div class="mt-3 text-right text-[14px]">
+            <div x-text="title"></div>
+            <div x-text="sub"></div>
+        </div>
+
+        <!-- POPUP -->
+        <div x-show="popupOpen" style="display:none;"
+            class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-6 z-50" @mousemove.window="
+            if (!isDragging) return;
+            currentX = $event.clientX - startX;
+            currentY = $event.clientY - startY;
+            hasMoved = true;
+        " @mouseup.window="isDragging = false" @click="
+            if (zoom > 1 && !isInside($event)) {
+                zoom = 1;
+                currentX = 0;
+                currentY = 0;
+                return;
+            }
+            if (zoom === 1) popupOpen = false;
+        ">
+
+            <div class="w-full max-w-[1100px]">
+
+                <!-- IMAGE -->
+                <img x-ref="img" :src="src" draggable="false" @click.stop="
+                    if (hasMoved) {
+                        hasMoved = false;
+                        return;
+                    }
+                    zoom = zoom === 1 ? 2 : 1;
+                    if (zoom === 1) {
+                        currentX = 0;
+                        currentY = 0;
+                    }
+                " @mousedown="
+                    $event.preventDefault();
+                    if (zoom === 1) return;
+
+                    isDragging = true;
+                    hasMoved = false;
+
+                    startX = $event.clientX - currentX;
+                    startY = $event.clientY - currentY;
+                " :style="transform()" :class="{
+                    'cursor-pointer hover:opacity-90': zoom === 1,
+                    'cursor-grab': zoom > 1 && !isDragging,
+                    'cursor-grabbing': isDragging
+                }" class="w-full max-h-[80vh] object-contain select-none will-change-transform transition">
+
+                <!-- CAPTION -->
+                <div x-show="zoom === 1" class="bg-[#e9e4dc] text-black text-sm px-4 py-2">
+                    <span x-text="title"></span>
+                    <span x-text="sub"></span>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
