@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
   <title>Crawling Berita</title>
 
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -13,67 +12,28 @@
 
 <div x-data="app()" class="max-w-5xl mx-auto p-6">
 
-  <h1 class="text-2xl font-bold mb-4">Crawling Berita</h1>
+  <h1 class="text-xl font-bold mb-4">Crawling Berita</h1>
 
-  <!-- FORM -->
   <div class="bg-white p-4 border mb-4">
-    <textarea x-model="primary" class="w-full border p-2 mb-2"
-      placeholder="Keyword utama (pisah koma)"></textarea>
+    <textarea x-model="primary" class="w-full border p-2 mb-2" placeholder="Keyword utama"></textarea>
+    <textarea x-model="secondary" class="w-full border p-2 mb-2" placeholder="Keyword kedua"></textarea>
 
-    <textarea x-model="secondary" class="w-full border p-2 mb-2"
-      placeholder="Keyword kedua (pisah koma)"></textarea>
-
-    <div class="flex gap-2 mb-2">
-      <input type="number" x-model="yearFrom" class="border p-2 w-1/2">
-      <input type="number" x-model="yearTo" class="border p-2 w-1/2">
-    </div>
-
-    <button @click="run()" 
-      class="bg-blue-600 text-white px-4 py-2 w-full">
+    <button @click="run()" class="bg-blue-600 text-white px-4 py-2 w-full">
       Jalankan Crawling
     </button>
   </div>
 
-  <!-- LOADING -->
-  <div x-show="loading" class="text-center text-slate-500 mb-4">
-    ⏳ Mengambil data...
-  </div>
+  <div x-show="loading" class="text-gray-500">Loading...</div>
+  <div x-show="error" class="text-red-500" x-text="error"></div>
 
-  <!-- ERROR -->
-  <div x-show="error" class="bg-red-100 text-red-600 p-2 mb-4">
-    <span x-text="error"></span>
-  </div>
-
-  <!-- RESULT -->
-  <div x-show="results.length > 0" class="bg-white border">
-    <table class="w-full text-sm">
-      <thead class="bg-slate-200">
-        <tr>
-          <th class="p-2 text-left">No</th>
-          <th class="p-2 text-left">Tanggal</th>
-          <th class="p-2 text-left">Judul</th>
-          <th class="p-2 text-left">Sumber</th>
-          <th class="p-2 text-left">Type</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <template x-for="(item, i) in results" :key="i">
-          <tr class="border-t">
-            <td class="p-2" x-text="i+1"></td>
-            <td class="p-2" x-text="item.date"></td>
-            <td class="p-2">
-              <a :href="item.link" target="_blank" class="text-blue-600">
-                <span x-text="item.title"></span>
-              </a>
-            </td>
-            <td class="p-2" x-text="item.source"></td>
-            <td class="p-2" x-text="item.type || 'news'"></td>
-          </tr>
-        </template>
-      </tbody>
-    </table>
-  </div>
+  <template x-for="item in results">
+    <div class="border p-2 mb-2 bg-white">
+      <a :href="item.link" target="_blank" class="text-blue-600 font-semibold">
+        <span x-text="item.title"></span>
+      </a>
+      <div class="text-sm text-gray-500" x-text="item.source"></div>
+    </div>
+  </template>
 
 </div>
 
@@ -82,8 +42,6 @@ function app(){
   return {
     primary: 'mangrove',
     secondary: 'jakarta',
-    yearFrom: 2020,
-    yearTo: 2025,
     results: [],
     loading: false,
     error: null,
@@ -94,29 +52,17 @@ function app(){
       this.results = [];
 
       try {
-        const API = window.location.origin;
-
-        const res = await fetch(API + '/api/crawl-all', {
+        const res = await fetch('/api/crawl-all', {
           method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             primaryKeywords: this.primary.split(',').map(x=>x.trim()),
-            secondaryKeywords: this.secondary.split(',').map(x=>x.trim()),
-            yearFrom: this.yearFrom,
-            yearTo: this.yearTo
+            secondaryKeywords: this.secondary.split(',').map(x=>x.trim())
           })
         });
 
-        // ambil text dulu (biar bisa debug HTML error)
-        const text = await res.text();
-
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch (e) {
-          console.error("Response bukan JSON:", text);
-          throw new Error("API tidak mengembalikan JSON");
-        }
+        // 🔥 FIX UTAMA DI SINI
+        const data = await res.json();
 
         if (!res.ok) {
           throw new Error(data.error || 'Server error');
@@ -124,13 +70,9 @@ function app(){
 
         this.results = data.results || [];
 
-        if(this.results.length === 0){
-          this.error = "Data kosong";
-        }
-
-      } catch(e){
-        this.error = e.message;
+      } catch (e) {
         console.error(e);
+        this.error = "Gagal ambil data";
       }
 
       this.loading = false;
