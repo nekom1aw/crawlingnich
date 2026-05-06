@@ -52,7 +52,7 @@ function app(){
       this.results = [];
 
       try {
-        const res = await fetch('/api/crawl-all', {
+        const res = await fetch('/api/crawl-all.js', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
