@@ -2,38 +2,96 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Crawling Berita</title>
+  <title>Crawling Insight</title>
 
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-slate-100 min-h-screen">
+<body class="bg-slate-950 text-slate-200">
 
-<div x-data="app()" class="max-w-5xl mx-auto p-6">
+<div x-data="app()" class="max-w-7xl mx-auto p-6">
 
-  <h1 class="text-xl font-bold mb-4">Crawling Berita</h1>
-
-  <div class="bg-white p-4 border mb-4">
-    <textarea x-model="primary" class="w-full border p-2 mb-2" placeholder="Keyword utama"></textarea>
-    <textarea x-model="secondary" class="w-full border p-2 mb-2" placeholder="Keyword kedua"></textarea>
-
-    <button @click="run()" class="bg-blue-600 text-white px-4 py-2 w-full">
-      Jalankan Crawling
-    </button>
+  <!-- HEADER -->
+  <div class="mb-6 border-b border-slate-700 pb-4">
+    <h1 class="text-3xl font-bold tracking-wide">Crawling Insight</h1>
+    <p class="text-slate-400 text-sm">News & Journal Intelligence Dashboard</p>
   </div>
 
-  <div x-show="loading" class="text-gray-500">Loading...</div>
-  <div x-show="error" class="text-red-500" x-text="error"></div>
+  <!-- FILTER -->
+  <div class="bg-slate-900 border border-slate-700 p-4 mb-6">
 
-  <template x-for="item in results">
-    <div class="border p-2 mb-2 bg-white">
-      <a :href="item.link" target="_blank" class="text-blue-600 font-semibold">
-        <span x-text="item.title"></span>
-      </a>
-      <div class="text-sm text-gray-500" x-text="item.source"></div>
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <input x-model="primary" class="bg-slate-800 border border-slate-700 p-2"
+             placeholder="Keyword utama">
+      <input x-model="secondary" class="bg-slate-800 border border-slate-700 p-2"
+             placeholder="Keyword kedua">
     </div>
-  </template>
+
+    <div class="grid md:grid-cols-4 gap-3 mb-4">
+
+      <select x-model="filterType" class="bg-slate-800 border border-slate-700 p-2">
+        <option value="all">Semua</option>
+        <option value="news">News</option>
+        <option value="journal">Journal</option>
+      </select>
+
+      <input type="month" x-model="startDate" class="bg-slate-800 border border-slate-700 p-2">
+      <input type="month" x-model="endDate" class="bg-slate-800 border border-slate-700 p-2">
+
+      <button @click="run()"
+        class="bg-blue-600 hover:bg-blue-700 text-white p-2 font-semibold">
+        RUN
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- STATUS -->
+  <div x-show="loading" class="mb-4 flex items-center gap-2">
+    <div class="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent"></div>
+    <span class="text-slate-400">Processing data...</span>
+  </div>
+
+  <div x-show="error" class="text-red-400 mb-4" x-text="error"></div>
+
+  <!-- RESULT COUNT -->
+  <div class="mb-4 text-sm text-slate-400">
+    <span x-text="filteredResults().length"></span> hasil ditemukan
+  </div>
+
+  <!-- RESULTS -->
+  <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+    <template x-for="item in filteredResults()" :key="item.link">
+      <div class="bg-slate-900 border border-slate-700 p-4 hover:border-blue-500 transition">
+
+        <div class="text-xs mb-2 font-bold"
+             :class="item.type === 'news' ? 'text-blue-400' : 'text-green-400'">
+          <span x-text="item.type.toUpperCase()"></span>
+        </div>
+
+        <a :href="item.link" target="_blank"
+           class="block text-lg font-semibold mb-2 hover:text-blue-400">
+          <span x-text="item.title"></span>
+        </a>
+
+        <div class="text-sm text-slate-400 flex justify-between">
+          <span x-text="item.source"></span>
+          <span x-text="formatDate(item.date)"></span>
+        </div>
+
+      </div>
+    </template>
+
+  </div>
+
+  <!-- EMPTY -->
+  <div x-show="!loading && filteredResults().length === 0"
+       class="text-center text-slate-500 mt-10">
+    Tidak ada data ditemukan
+  </div>
 
 </div>
 
@@ -45,6 +103,9 @@ function app(){
     results: [],
     loading: false,
     error: null,
+    filterType: 'all',
+    startDate: '',
+    endDate: '',
 
     async run(){
       this.loading = true;
@@ -61,21 +122,53 @@ function app(){
           })
         });
 
-        // 🔥 FIX UTAMA DI SINI
         const data = await res.json();
 
-        if (!res.ok) {
-          throw new Error(data.error || 'Server error');
-        }
+        if (!res.ok) throw new Error(data.error || 'Server error');
 
         this.results = data.results || [];
 
       } catch (e) {
         console.error(e);
-        this.error = "Gagal ambil data";
+        this.error = "Gagal mengambil data";
       }
 
       this.loading = false;
+    },
+
+    filteredResults(){
+      return this.results.filter(item => {
+
+        // filter type
+        if (this.filterType !== 'all' && item.type !== this.filterType) return false;
+
+        let d = new Date(item.date);
+        if (isNaN(d)) return true;
+
+        if (this.startDate) {
+          let start = new Date(this.startDate + "-01");
+          if (d < start) return false;
+        }
+
+        if (this.endDate) {
+          let end = new Date(this.endDate + "-31");
+          if (d > end) return false;
+        }
+
+        return true;
+      });
+    },
+
+    formatDate(date){
+      try {
+        return new Date(date).toLocaleDateString('id-ID', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      } catch {
+        return date;
+      }
     }
   }
 }
