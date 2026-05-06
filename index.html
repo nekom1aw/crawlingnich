@@ -14,21 +14,51 @@
 
   <!-- HEADER -->
   <div class="mb-6 border-b border-slate-700 pb-4">
-    <h1 class="text-3xl font-bold tracking-wide">Crawling Insight</h1>
-    <p class="text-slate-400 text-sm">News & Journal Intelligence Dashboard</p>
+    <h1 class="text-3xl font-bold">Crawling Insight</h1>
+    <p class="text-slate-400 text-sm">Multi Keyword News & Journal</p>
   </div>
 
-  <!-- FILTER -->
-  <div class="bg-slate-900 border border-slate-700 p-4 mb-6">
+  <!-- INPUT PANEL -->
+  <div class="bg-slate-900 border border-slate-700 p-4 mb-6 space-y-4">
 
-    <div class="grid md:grid-cols-2 gap-4 mb-4">
-      <input x-model="primary" class="bg-slate-800 border border-slate-700 p-2"
-             placeholder="Keyword utama">
-      <input x-model="secondary" class="bg-slate-800 border border-slate-700 p-2"
-             placeholder="Keyword kedua">
+    <!-- PRIMARY -->
+    <div>
+      <label class="text-sm text-slate-400">Primary Keyword</label>
+      <input @keydown.enter.prevent="addPrimary()"
+        x-model="inputPrimary"
+        class="w-full bg-slate-800 border border-slate-700 p-2 mt-1"
+        placeholder="ketik lalu tekan enter">
+
+      <div class="flex gap-2 mt-2 flex-wrap">
+        <template x-for="(k,i) in primaryKeywords">
+          <div class="border border-blue-500 px-2 text-sm flex gap-2">
+            <span x-text="k"></span>
+            <button @click="primaryKeywords.splice(i,1)">x</button>
+          </div>
+        </template>
+      </div>
     </div>
 
-    <div class="grid md:grid-cols-4 gap-3 mb-4">
+    <!-- SECONDARY -->
+    <div>
+      <label class="text-sm text-slate-400">Secondary Keywords</label>
+      <input @keydown.enter.prevent="addSecondary()"
+        x-model="inputSecondary"
+        class="w-full bg-slate-800 border border-slate-700 p-2 mt-1"
+        placeholder="ketik lalu enter (bisa banyak)">
+
+      <div class="flex gap-2 mt-2 flex-wrap">
+        <template x-for="(k,i) in secondaryKeywords">
+          <div class="border border-green-500 px-2 text-sm flex gap-2">
+            <span x-text="k"></span>
+            <button @click="secondaryKeywords.splice(i,1)">x</button>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- FILTER -->
+    <div class="grid md:grid-cols-4 gap-3">
 
       <select x-model="filterType" class="bg-slate-800 border border-slate-700 p-2">
         <option value="all">Semua</option>
@@ -39,8 +69,7 @@
       <input type="month" x-model="startDate" class="bg-slate-800 border border-slate-700 p-2">
       <input type="month" x-model="endDate" class="bg-slate-800 border border-slate-700 p-2">
 
-      <button @click="run()"
-        class="bg-blue-600 hover:bg-blue-700 text-white p-2 font-semibold">
+      <button @click="run()" class="bg-blue-600 hover:bg-blue-700 p-2 font-semibold">
         RUN
       </button>
 
@@ -49,35 +78,25 @@
   </div>
 
   <!-- STATUS -->
-  <div x-show="loading" class="mb-4 flex items-center gap-2">
-    <div class="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent"></div>
-    <span class="text-slate-400">Processing data...</span>
-  </div>
-
+  <div x-show="loading" class="mb-4 text-blue-400">Loading...</div>
   <div x-show="error" class="text-red-400 mb-4" x-text="error"></div>
 
-  <!-- RESULT COUNT -->
-  <div class="mb-4 text-sm text-slate-400">
-    <span x-text="filteredResults().length"></span> hasil ditemukan
-  </div>
-
-  <!-- RESULTS -->
+  <!-- RESULT -->
   <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
 
     <template x-for="item in filteredResults()" :key="item.link">
-      <div class="bg-slate-900 border border-slate-700 p-4 hover:border-blue-500 transition">
+      <div class="bg-slate-900 border border-slate-700 p-4 hover:border-blue-500">
 
         <div class="text-xs mb-2 font-bold"
-             :class="item.type === 'news' ? 'text-blue-400' : 'text-green-400'">
+          :class="item.type === 'news' ? 'text-blue-400' : 'text-green-400'">
           <span x-text="item.type.toUpperCase()"></span>
         </div>
 
-        <a :href="item.link" target="_blank"
-           class="block text-lg font-semibold mb-2 hover:text-blue-400">
+        <a :href="item.link" target="_blank" class="block font-semibold hover:text-blue-400">
           <span x-text="item.title"></span>
         </a>
 
-        <div class="text-sm text-slate-400 flex justify-between">
+        <div class="text-sm text-slate-400 mt-1 flex justify-between">
           <span x-text="item.source"></span>
           <span x-text="formatDate(item.date)"></span>
         </div>
@@ -87,19 +106,15 @@
 
   </div>
 
-  <!-- EMPTY -->
-  <div x-show="!loading && filteredResults().length === 0"
-       class="text-center text-slate-500 mt-10">
-    Tidak ada data ditemukan
-  </div>
-
 </div>
 
 <script>
 function app(){
   return {
-    primary: 'mangrove',
-    secondary: 'jakarta',
+    inputPrimary: '',
+    inputSecondary: '',
+    primaryKeywords: ['orangutan'],
+    secondaryKeywords: ['konflik','perdagangan'],
     results: [],
     loading: false,
     error: null,
@@ -107,66 +122,62 @@ function app(){
     startDate: '',
     endDate: '',
 
-    async run(){
-      this.loading = true;
-      this.error = null;
-      this.results = [];
+    addPrimary(){
+      if(this.inputPrimary.trim()){
+        this.primaryKeywords.push(this.inputPrimary.trim());
+        this.inputPrimary='';
+      }
+    },
 
-      try {
-        const res = await fetch('/api/crawl-all.js', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            primaryKeywords: this.primary.split(',').map(x=>x.trim()),
-            secondaryKeywords: this.secondary.split(',').map(x=>x.trim())
+    addSecondary(){
+      if(this.inputSecondary.trim()){
+        this.secondaryKeywords.push(this.inputSecondary.trim());
+        this.inputSecondary='';
+      }
+    },
+
+    async run(){
+      this.loading=true;
+      this.results=[];
+
+      try{
+        const res = await fetch('/api/crawl-all.js',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({
+            primaryKeywords:this.primaryKeywords,
+            secondaryKeywords:this.secondaryKeywords
           })
         });
 
         const data = await res.json();
-
-        if (!res.ok) throw new Error(data.error || 'Server error');
-
         this.results = data.results || [];
 
-      } catch (e) {
-        console.error(e);
-        this.error = "Gagal mengambil data";
+      }catch(e){
+        this.error="Error ambil data";
       }
 
-      this.loading = false;
+      this.loading=false;
     },
 
     filteredResults(){
-      return this.results.filter(item => {
-
-        // filter type
-        if (this.filterType !== 'all' && item.type !== this.filterType) return false;
+      return this.results.filter(item=>{
+        if(this.filterType!=='all' && item.type!==this.filterType) return false;
 
         let d = new Date(item.date);
-        if (isNaN(d)) return true;
+        if(isNaN(d)) return true;
 
-        if (this.startDate) {
-          let start = new Date(this.startDate + "-01");
-          if (d < start) return false;
-        }
-
-        if (this.endDate) {
-          let end = new Date(this.endDate + "-31");
-          if (d > end) return false;
-        }
+        if(this.startDate && d < new Date(this.startDate+"-01")) return false;
+        if(this.endDate && d > new Date(this.endDate+"-31")) return false;
 
         return true;
       });
     },
 
     formatDate(date){
-      try {
-        return new Date(date).toLocaleDateString('id-ID', {
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric'
-        });
-      } catch {
+      try{
+        return new Date(date).toLocaleDateString('id-ID');
+      }catch{
         return date;
       }
     }
