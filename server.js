@@ -3,7 +3,7 @@ const axios = require('axios');
 const { parseString } = require('xml2js');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // =============================
 // MIDDLEWARE
@@ -122,7 +122,7 @@ app.post('/api/crawl-all', async (req, res) => {
                         type: "news",
                         title: item.title?.[0],
                         link: link,
-                        date: formatDate(pubDate),
+                        date: pubDate || null,
                         source: extractSource(link),
                         matchedKeywords: `${primary} + ${secondary}`
                     });
@@ -160,7 +160,7 @@ app.post('/api/crawl-all', async (req, res) => {
                         type: "journal",
                         title: p.title,
                         link: link,
-                        date: year || '-',
+                        date: year ? `${year}-01-01T00:00:00.000Z` : null,
                         source: link.includes("sciencedirect")
                             ? "ScienceDirect"
                             : link.includes("researchgate")

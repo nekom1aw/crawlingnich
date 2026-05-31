@@ -1,189 +1,520 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Crawling Insight</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrawlVault - Data Crawling Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
 
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161d;
+    --bg3: #1a1e28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0f2f8;
+    --text2: #8b90a0;
+    --text3: #555c6e;
+    --accent: #ffffff;
+    --accent2: #b8bcc8;
+    --green: #d8dbe2;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius: 0px;
+    --radius-lg: 0px;
+  }
+
+  body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
+  .shell { display: grid; grid-template-rows: 56px 1fr; height: 100vh; overflow: hidden; }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background: var(--bg2); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+  .nav-logo { font-family: var(--font-head); font-weight: 800; font-size: 17px; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; }
+  .logo-dot { width: 8px; height: 8px; background: #fff; }
+  .nav-right { display: flex; align-items: center; gap: 16px; }
+  .badge-live { display: flex; align-items: center; gap: 5px; font-size: 11px; font-family: var(--font-mono); color: #fff; padding: 3px 10px; border: 1px solid var(--border2); }
+  .dot-pulse { width: 6px; height: 6px; background: #fff; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .main { display: grid; grid-template-columns: 280px 1fr; overflow: hidden; }
+  aside { background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; padding: 20px 16px; gap: 24px; }
+  aside::-webkit-scrollbar { width: 4px; }
+  aside::-webkit-scrollbar-thumb { background: var(--border2); }
+
+  .section-label { font-size: 10px; font-weight: 600; letter-spacing: 1.2px; color: var(--text3); text-transform: uppercase; margin-bottom: 10px; }
+  .keyword-group { display: flex; flex-direction: column; gap: 10px; }
+  .input-wrap { position: relative; }
+  .input-wrap .lbl { position: absolute; top: -8px; left: 10px; font-size: 10px; font-family: var(--font-mono); color: #fff; background: var(--bg2); padding: 0 4px; z-index:1; letter-spacing: 0.5px; }
+  .input-wrap input { width: 100%; padding: 10px 12px 10px 36px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-family: var(--font-body); font-size: 13px; outline: none; transition: border-color 0.2s; }
+  .input-wrap input:focus { border-color: #fff; }
+  .input-wrap input::placeholder { color: var(--text3); }
+  .input-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 15px; pointer-events: none; }
+
+  .tags-list { display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; }
+  .tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; font-size: 11px; font-family: var(--font-mono); cursor: pointer; transition: 0.2s; border: 1px solid var(--border2); }
+  .tag-primary { background: rgba(255,255,255,0.08); color: #fff; }
+  .tag-secondary { background: rgba(255,255,255,0.04); color: var(--accent2); }
+  .tag .remove { opacity: 0.5; font-size: 12px; }
+
+  .type-filter { display: flex; flex-direction: column; gap: 6px; }
+  .type-btn { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: transparent; border: 1px solid transparent; color: var(--text2); cursor: pointer; font-family: var(--font-body); font-size: 13px; transition: 0.2s; width: 100%; text-align: left; }
+  .type-btn.active { background: rgba(255,255,255,0.08); border-color: var(--border2); color: #fff; }
+  .type-btn:hover:not(.active) { background: var(--bg3); }
+  .type-count { margin-left: auto; font-size: 11px; font-family: var(--font-mono); background: var(--bg3); padding: 2px 7px; }
+
+  .date-filter { display: flex; flex-direction: column; gap: 10px; }
+  .date-row-label { font-size: 10px; color: var(--text3); font-family: var(--font-mono); margin-bottom: 4px; letter-spacing: 0.5px; }
+  .date-selects { display: grid; grid-template-columns: 2fr 2.4fr 2.2fr; gap: 5px; }
+  .dsel { padding: 7px 6px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-size: 11px; font-family: var(--font-mono); outline: none; cursor: pointer; -webkit-appearance: none; transition: border-color 0.2s; width: 100%; }
+  .dsel:focus { border-color: #fff; }
+  .dsel option { background: #1a1e28; }
+  .date-arrow { display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 13px; padding: 2px 0; }
+  .date-summary { font-size: 11px; font-family: var(--font-mono); color: #fff; background: rgba(255,255,255,0.08); border: 1px solid var(--border2); padding: 6px 10px; text-align: center; min-height: 28px; }
+
+  .btn-crawl { width: 100%; padding: 11px; background: #fff; border: none; color: #000; font-family: var(--font-head); font-weight: 700; font-size: 14px; cursor: pointer; letter-spacing: 0.3px; transition: opacity 0.2s, transform 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-crawl:hover { opacity: 0.9; }
+
+  .content { display: flex; flex-direction: column; overflow: hidden; }
+  .toolbar { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--bg); }
+  .search-bar { flex: 1; position: relative; }
+  .search-bar input { width: 100%; padding: 9px 12px 9px 36px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-size: 13px; outline: none; font-family: var(--font-body); transition: border-color 0.2s; }
+  .search-bar input:focus { border-color: #fff; }
+  .search-bar input::placeholder { color: var(--text3); }
+  .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 15px; }
+
+  .stats-bar { display: flex; gap: 20px; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--bg); font-size: 12px; }
+  .stat-item { display: flex; align-items: center; gap: 6px; color: var(--text2); }
+  .stat-item strong { color: var(--text); font-family: var(--font-mono); font-size: 13px; }
+  .stat-dot { width: 6px; height: 6px; background:#fff; }
+
+  .results { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .result-card { background: var(--bg2); border: 1px solid var(--border); padding: 16px; display: flex; gap: 14px; transition: border-color 0.2s, transform 0.15s; }
+  .result-card:hover { border-color: var(--border2); }
+  @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+  .card-icon { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border:1px solid var(--border2); }
+  .icon-news { color: #fff; }
+  .icon-journal { color: #c6c9d2; }
+
+  .card-body { flex: 1; min-width: 0; }
+  .card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
+  .type-badge { font-size: 10px; font-family: var(--font-mono); padding: 2px 8px; font-weight: 500; border:1px solid var(--border2); }
+  .badge-news { color: #fff; }
+  .badge-journal { color: #c6c9d2; }
+  .card-source { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
+  .card-date { font-size: 11px; color: var(--text3); margin-left: auto; }
+  .card-title { font-size: 14px; font-weight: 500; line-height: 1.45; margin-bottom: 5px; color: var(--text); }
+  .card-snippet { font-size: 12px; color: var(--text2); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-footer { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .card-action { padding: 4px 10px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); font-size: 11px; cursor: pointer; transition: 0.15s; text-decoration:none; }
+  .card-action:hover { color: #fff; border-color: #fff; }
+
+  .empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text3); padding: 60px 0; }
+  .empty i { font-size: 48px; }
+
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px 20px; border-top: 1px solid var(--border); }
+  .page-btn { padding: 6px 12px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-size: 12px; cursor: pointer; font-family: var(--font-mono); transition: 0.15s; }
+  .page-btn.active { background: rgba(255,255,255,0.14); border-color: #fff; color: #fff; }
+  .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  @media (max-width: 1024px) {
+    .main { grid-template-columns: 1fr; }
+    aside { max-height: 50vh; }
+  }
+</style>
 </head>
+<body>
+<div class="shell">
+  <nav>
+    <div class="nav-logo"><div class="logo-dot"></div>CrawlVault</div>
+    <div class="nav-right">
+      <div class="badge-live"><div class="dot-pulse"></div>ENGINE READY</div>
+      <i class="ti ti-settings" style="font-size:18px;color:var(--text3)"></i>
+    </div>
+  </nav>
 
-<body class="bg-slate-950 text-slate-200">
-
-<div x-data="app()" class="max-w-7xl mx-auto p-6">
-
-  <!-- HEADER -->
-  <div class="mb-6 border-b border-slate-700 pb-4">
-    <h1 class="text-3xl font-bold">Crawling Insight</h1>
-    <p class="text-slate-400 text-sm">Multi Keyword News & Journal</p>
-  </div>
-
-  <!-- INPUT PANEL -->
-  <div class="bg-slate-900 border border-slate-700 p-4 mb-6 space-y-4">
-
-    <!-- PRIMARY -->
-    <div>
-      <label class="text-sm text-slate-400">Primary Keyword</label>
-      <input @keydown.enter.prevent="addPrimary()"
-        x-model="inputPrimary"
-        class="w-full bg-slate-800 border border-slate-700 p-2 mt-1"
-        placeholder="ketik lalu tekan enter">
-
-      <div class="flex gap-2 mt-2 flex-wrap">
-        <template x-for="(k,i) in primaryKeywords">
-          <div class="border border-blue-500 px-2 text-sm flex gap-2">
-            <span x-text="k"></span>
-            <button @click="primaryKeywords.splice(i,1)">x</button>
+  <div class="main">
+    <aside>
+      <div>
+        <div class="section-label">Primary Keyword</div>
+        <div class="keyword-group">
+          <div class="input-wrap primary-tag">
+            <span class="lbl">PRIMARY</span>
+            <i class="ti ti-key input-icon"></i>
+            <input type="text" id="primaryInput" placeholder="masukkan kata kunci utama..." />
           </div>
-        </template>
+          <div class="tags-list" id="primaryTags"></div>
+        </div>
       </div>
-    </div>
 
-    <!-- SECONDARY -->
-    <div>
-      <label class="text-sm text-slate-400">Secondary Keywords</label>
-      <input @keydown.enter.prevent="addSecondary()"
-        x-model="inputSecondary"
-        class="w-full bg-slate-800 border border-slate-700 p-2 mt-1"
-        placeholder="ketik lalu enter (bisa banyak)">
-
-      <div class="flex gap-2 mt-2 flex-wrap">
-        <template x-for="(k,i) in secondaryKeywords">
-          <div class="border border-green-500 px-2 text-sm flex gap-2">
-            <span x-text="k"></span>
-            <button @click="secondaryKeywords.splice(i,1)">x</button>
+      <div>
+        <div class="section-label">Secondary Keyword</div>
+        <div class="keyword-group">
+          <div class="input-wrap secondary-tag">
+            <span class="lbl">SECONDARY</span>
+            <i class="ti ti-tag input-icon"></i>
+            <input type="text" id="secondaryInput" placeholder="tambah kata kunci pendukung..." />
           </div>
-        </template>
-      </div>
-    </div>
-
-    <!-- FILTER -->
-    <div class="grid md:grid-cols-4 gap-3">
-
-      <select x-model="filterType" class="bg-slate-800 border border-slate-700 p-2">
-        <option value="all">Semua</option>
-        <option value="news">News</option>
-        <option value="journal">Journal</option>
-      </select>
-
-      <input type="month" x-model="startDate" class="bg-slate-800 border border-slate-700 p-2">
-      <input type="month" x-model="endDate" class="bg-slate-800 border border-slate-700 p-2">
-
-      <button @click="run()" class="bg-blue-600 hover:bg-blue-700 p-2 font-semibold">
-        RUN
-      </button>
-
-    </div>
-
-  </div>
-
-  <!-- STATUS -->
-  <div x-show="loading" class="mb-4 text-blue-400">Loading...</div>
-  <div x-show="error" class="text-red-400 mb-4" x-text="error"></div>
-
-  <!-- RESULT -->
-  <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
-
-    <template x-for="item in filteredResults()" :key="item.link">
-      <div class="bg-slate-900 border border-slate-700 p-4 hover:border-blue-500">
-
-        <div class="text-xs mb-2 font-bold"
-          :class="item.type === 'news' ? 'text-blue-400' : 'text-green-400'">
-          <span x-text="item.type.toUpperCase()"></span>
+          <div class="tags-list" id="secondaryTags"></div>
         </div>
-
-        <a :href="item.link" target="_blank" class="block font-semibold hover:text-blue-400">
-          <span x-text="item.title"></span>
-        </a>
-
-        <div class="text-sm text-slate-400 mt-1 flex justify-between">
-          <span x-text="item.source"></span>
-          <span x-text="formatDate(item.date)"></span>
-        </div>
-
       </div>
-    </template>
 
+      <div>
+        <div class="section-label">Tipe Konten</div>
+        <div class="type-filter">
+          <button class="type-btn active" data-type="all"><i class="ti ti-world"></i> Semua <span class="type-count" id="cnt-all">0</span></button>
+          <button class="type-btn" data-type="news"><i class="ti ti-news"></i> Berita <span class="type-count" id="cnt-berita">0</span></button>
+          <button class="type-btn" data-type="journal"><i class="ti ti-book"></i> Jurnal <span class="type-count" id="cnt-jurnal">0</span></button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">Filter Tanggal</div>
+        <div class="date-filter">
+          <div>
+            <div class="date-row-label">DARI</div>
+            <div class="date-selects">
+              <select class="dsel" id="fromDay"></select>
+              <select class="dsel" id="fromMonth"></select>
+              <select class="dsel" id="fromYear"></select>
+            </div>
+          </div>
+          <div class="date-arrow"><i class="ti ti-arrows-down"></i></div>
+          <div>
+            <div class="date-row-label">SAMPAI</div>
+            <div class="date-selects">
+              <select class="dsel" id="toDay"></select>
+              <select class="dsel" id="toMonth"></select>
+              <select class="dsel" id="toYear"></select>
+            </div>
+          </div>
+          <div class="date-summary" id="dateSummary">— pilih rentang tanggal —</div>
+        </div>
+      </div>
+
+      <button class="btn-crawl" id="crawlBtn"><i class="ti ti-radar" style="font-size:16px"></i> Mulai Crawling</button>
+    </aside>
+
+    <div class="content">
+      <div class="toolbar">
+        <div class="search-bar">
+          <i class="ti ti-search search-icon"></i>
+          <input type="text" placeholder="Cari dalam hasil crawling..." id="searchInResults" />
+        </div>
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat-item"><div class="stat-dot"></div><strong id="totalCount">0</strong> total hasil</div>
+        <div class="stat-item"><div class="stat-dot"></div><strong id="newsCount">0</strong> berita</div>
+        <div class="stat-item"><div class="stat-dot"></div><strong id="journalCount">0</strong> jurnal</div>
+      </div>
+
+      <div class="results" id="resultsList"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
   </div>
-
 </div>
 
 <script>
-function app(){
-  return {
-    inputPrimary: '',
-    inputSecondary: '',
-    primaryKeywords: ['orangutan'],
-    secondaryKeywords: ['konflik','perdagangan'],
-    results: [],
-    loading: false,
-    error: null,
-    filterType: 'all',
-    startDate: '',
-    endDate: '',
+let DATA = [];
+let activeType = 'all';
+let currentPage = 1;
+const PER_PAGE = 10;
+const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
-    addPrimary(){
-      if(this.inputPrimary.trim()){
-        this.primaryKeywords.push(this.inputPrimary.trim());
-        this.inputPrimary='';
-      }
-    },
+function getTags(listId) {
+  return [...document.querySelectorAll(`#${listId} .tag`)].map(t => t.dataset.value).filter(Boolean);
+}
 
-    addSecondary(){
-      if(this.inputSecondary.trim()){
-        this.secondaryKeywords.push(this.inputSecondary.trim());
-        this.inputSecondary='';
-      }
-    },
+function parseFilterDate(dayId, monthId, yearId, endOfDay = false) {
+  const d = Number(document.getElementById(dayId).value);
+  const m = Number(document.getElementById(monthId).value);
+  const y = Number(document.getElementById(yearId).value);
+  if (!d || !m || !y) return null;
+  return endOfDay ? new Date(y, m - 1, d, 23, 59, 59, 999) : new Date(y, m - 1, d, 0, 0, 0, 0);
+}
 
-    async run(){
-      this.loading=true;
-      this.results=[];
+function getFiltered() {
+  const q = document.getElementById('searchInResults').value.toLowerCase();
+  const fromDate = parseFilterDate('fromDay', 'fromMonth', 'fromYear');
+  const toDate = parseFilterDate('toDay', 'toMonth', 'toYear', true);
 
-      try{
-        const res = await fetch('/api/crawl-all.js',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({
-            primaryKeywords:this.primaryKeywords,
-            secondaryKeywords:this.secondaryKeywords
-          })
-        });
+  return DATA.filter(d => {
+    const matchType = activeType === 'all' || d.type === activeType;
+    const matchQ = !q || (d.title || '').toLowerCase().includes(q);
 
-        const data = await res.json();
-        this.results = data.results || [];
+    const itemDate = d.date ? new Date(d.date) : null;
+    const validDate = itemDate && !Number.isNaN(itemDate.getTime());
 
-      }catch(e){
-        this.error="Error ambil data";
-      }
-
-      this.loading=false;
-    },
-
-    filteredResults(){
-      return this.results.filter(item=>{
-        if(this.filterType!=='all' && item.type!==this.filterType) return false;
-
-        let d = new Date(item.date);
-        if(isNaN(d)) return true;
-
-        if(this.startDate && d < new Date(this.startDate+"-01")) return false;
-        if(this.endDate && d > new Date(this.endDate+"-31")) return false;
-
-        return true;
-      });
-    },
-
-    formatDate(date){
-      try{
-        return new Date(date).toLocaleDateString('id-ID');
-      }catch{
-        return date;
-      }
+    if (fromDate || toDate) {
+      if (!validDate) return false;
+      if (fromDate && itemDate < fromDate) return false;
+      if (toDate && itemDate > toDate) return false;
     }
+
+    return matchType && matchQ;
+  });
+}
+
+function formatDateID(dateStr) {
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function updateCounters(filtered) {
+  const news = filtered.filter(x => x.type === 'news').length;
+  const journal = filtered.filter(x => x.type === 'journal').length;
+  document.getElementById('cnt-all').textContent = filtered.length;
+  document.getElementById('cnt-berita').textContent = news;
+  document.getElementById('cnt-jurnal').textContent = journal;
+  document.getElementById('totalCount').textContent = filtered.length;
+  document.getElementById('newsCount').textContent = news;
+  document.getElementById('journalCount').textContent = journal;
+}
+
+function renderResults() {
+  const filtered = getFiltered();
+  updateCounters(filtered);
+
+  const list = document.getElementById('resultsList');
+  const total = filtered.length;
+  const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+  currentPage = Math.min(currentPage, pages);
+  const start = (currentPage - 1) * PER_PAGE;
+  const slice = filtered.slice(start, start + PER_PAGE);
+
+  if (!slice.length) {
+    list.innerHTML = `<div class="empty"><i class="ti ti-mood-empty"></i><p>Tidak ada hasil ditemukan</p></div>`;
+    renderPagination(1);
+    return;
+  }
+
+  list.innerHTML = slice.map((d) => `
+    <div class="result-card">
+      <div class="card-icon ${d.type === 'journal' ? 'icon-journal' : 'icon-news'}">
+        <i class="ti ${d.type === 'journal' ? 'ti-book' : 'ti-news'}"></i>
+      </div>
+      <div class="card-body">
+        <div class="card-meta">
+          <span class="type-badge ${d.type === 'journal' ? 'badge-journal' : 'badge-news'}">${d.type.toUpperCase()}</span>
+          <span class="card-source">${d.source || 'Unknown'}</span>
+          <span class="card-date"><i class="ti ti-calendar" style="font-size:11px"></i> ${formatDateID(d.date)}</span>
+        </div>
+        <div class="card-title">${d.title || '-'}</div>
+        <div class="card-snippet">${d.matchedKeywords ? `Keyword: ${d.matchedKeywords}` : ''}</div>
+        <div class="card-footer">
+          <a class="card-action" target="_blank" rel="noopener noreferrer" href="${d.link || '#'}"><i class="ti ti-external-link" style="font-size:11px"></i> Buka</a>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  renderPagination(pages);
+}
+
+function renderPagination(pages) {
+  const pg = document.getElementById('pagination');
+  if (pages <= 1) { pg.innerHTML = ''; return; }
+  let html = `<button class="page-btn" ${currentPage===1?'disabled':''} onclick="goPage(${currentPage-1})"><i class="ti ti-chevron-left"></i></button>`;
+  for (let i = 1; i <= pages; i++) {
+    html += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  html += `<button class="page-btn" ${currentPage===pages?'disabled':''} onclick="goPage(${currentPage+1})"><i class="ti ti-chevron-right"></i></button>`;
+  pg.innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; renderResults(); }
+
+document.querySelectorAll('.type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeType = btn.dataset.type;
+    currentPage = 1;
+    renderResults();
+  });
+});
+
+document.getElementById('searchInResults').addEventListener('input', () => { currentPage = 1; renderResults(); });
+
+function fillDays(selId, max) {
+  const sel = document.getElementById(selId);
+  const cur = Number(sel.value);
+  sel.innerHTML = '';
+  for (let i = 1; i <= max; i++) {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = String(i).padStart(2,'0');
+    sel.appendChild(o);
+  }
+  if (cur && cur <= max) sel.value = String(cur);
+}
+function fillMonths(selId) {
+  const sel = document.getElementById(selId);
+  sel.innerHTML = MONTHS.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
+}
+function fillYears(selId) {
+  const sel = document.getElementById(selId);
+  const now = new Date().getFullYear();
+  sel.innerHTML = '';
+  for (let y = now; y >= now - 15; y--) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    sel.appendChild(o);
   }
 }
-</script>
+function daysInMonth(month, year) { return new Date(year, month, 0).getDate(); }
 
+function updateDateSummary() {
+  const fd = document.getElementById('fromDay').value;
+  const fm = Number(document.getElementById('fromMonth').value);
+  const fy = document.getElementById('fromYear').value;
+  const td = document.getElementById('toDay').value;
+  const tm = Number(document.getElementById('toMonth').value);
+  const ty = document.getElementById('toYear').value;
+  const el = document.getElementById('dateSummary');
+  if (!fd || !fm || !fy || !td || !tm || !ty) { el.textContent = '— pilih rentang tanggal —'; return; }
+  el.textContent = `${String(fd).padStart(2,'0')} ${MONTHS[fm-1].slice(0,3)} ${fy}  →  ${String(td).padStart(2,'0')} ${MONTHS[tm-1].slice(0,3)} ${ty}`;
+}
+
+function initDateDropdowns() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth()+1, d = now.getDate();
+  fillMonths('fromMonth'); fillMonths('toMonth');
+  fillYears('fromYear'); fillYears('toYear');
+  fillDays('fromDay', daysInMonth(m, y));
+  fillDays('toDay', daysInMonth(m, y));
+
+  document.getElementById('fromDay').value = '1';
+  document.getElementById('fromMonth').value = String(m);
+  document.getElementById('fromYear').value = String(y);
+  document.getElementById('toDay').value = String(d);
+  document.getElementById('toMonth').value = String(m);
+  document.getElementById('toYear').value = String(y);
+  updateDateSummary();
+}
+
+['fromMonth','fromYear','toMonth','toYear'].forEach(id => {
+  document.getElementById(id).addEventListener('change', () => {
+    const fm = Number(document.getElementById('fromMonth').value);
+    const fy = Number(document.getElementById('fromYear').value);
+    fillDays('fromDay', daysInMonth(fm, fy));
+    const tm = Number(document.getElementById('toMonth').value);
+    const ty = Number(document.getElementById('toYear').value);
+    fillDays('toDay', daysInMonth(tm, ty));
+    updateDateSummary();
+    renderResults();
+  });
+});
+['fromDay','toDay'].forEach(id => document.getElementById(id).addEventListener('change', () => { updateDateSummary(); renderResults(); }));
+
+function addTag(inputId, listId, cls) {
+  const inp = document.getElementById(inputId);
+  const val = inp.value.trim();
+  if (!val) return;
+  const list = document.getElementById(listId);
+  const exists = [...list.querySelectorAll('.tag')].some(t => t.dataset.value.toLowerCase() === val.toLowerCase());
+  if (exists) { inp.value = ''; return; }
+  const span = document.createElement('span');
+  span.className = `tag ${cls}`;
+  span.dataset.value = val;
+  span.innerHTML = `${val} <span class="remove">×</span>`;
+  list.appendChild(span);
+  inp.value = '';
+}
+
+document.getElementById('primaryInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addTag('primaryInput', 'primaryTags', 'tag-primary'); }
+});
+document.getElementById('secondaryInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addTag('secondaryInput', 'secondaryTags', 'tag-secondary'); }
+});
+
+document.getElementById('primaryTags').addEventListener('click', e => {
+  if (e.target.classList.contains('remove')) { e.target.parentElement.remove(); renderResults(); }
+});
+document.getElementById('secondaryTags').addEventListener('click', e => {
+  if (e.target.classList.contains('remove')) { e.target.parentElement.remove(); renderResults(); }
+});
+
+async function runCrawl() {
+  const primaryKeywords = getTags('primaryTags');
+  const secondaryKeywords = getTags('secondaryTags');
+  if (!primaryKeywords.length || !secondaryKeywords.length) {
+    alert('Primary dan secondary keyword wajib diisi.');
+    return;
+  }
+
+  const fromYear = Number(document.getElementById('fromYear').value);
+  const toYear = Number(document.getElementById('toYear').value);
+
+  const payload = { primaryKeywords, secondaryKeywords, yearFrom: fromYear, yearTo: toYear };
+  let response;
+
+  try {
+    response = await fetch('/api/crawl-all', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      response = await fetch('/api/crawl-all.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    }
+  } catch {
+    response = await fetch('/api/crawl-all.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  const data = await response.json();
+  DATA = Array.isArray(data.results) ? data.results : [];
+  currentPage = 1;
+  renderResults();
+}
+
+document.getElementById('crawlBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('crawlBtn');
+  btn.innerHTML = '<i class="ti ti-loader-2" style="font-size:16px;animation:spin 1s linear infinite"></i> Crawling...';
+  btn.disabled = true;
+  try {
+    await runCrawl();
+  } catch (e) {
+    alert('Gagal crawl: ' + e.message);
+  } finally {
+    btn.innerHTML = '<i class="ti ti-radar" style="font-size:16px"></i> Mulai Crawling';
+    btn.disabled = false;
+  }
+});
+
+addTag('primaryInput', 'primaryTags', 'tag-primary');
+document.getElementById('primaryTags').innerHTML = '';
+addTag('secondaryInput', 'secondaryTags', 'tag-secondary');
+document.getElementById('secondaryTags').innerHTML = '';
+['orangutan'].forEach(v => {
+  const s = document.createElement('span');
+  s.className = 'tag tag-primary';
+  s.dataset.value = v;
+  s.innerHTML = `${v} <span class="remove">×</span>`;
+  document.getElementById('primaryTags').appendChild(s);
+});
+['konflik','perdagangan'].forEach(v => {
+  const s = document.createElement('span');
+  s.className = 'tag tag-secondary';
+  s.dataset.value = v;
+  s.innerHTML = `${v} <span class="remove">×</span>`;
+  document.getElementById('secondaryTags').appendChild(s);
+});
+
+initDateDropdowns();
+renderResults();
+</script>
 </body>
 </html>
