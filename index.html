@@ -6,6 +6,7 @@
 <title>Dashboard Beta Crawling</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
 
@@ -38,12 +39,56 @@
   .dot-pulse { width: 6px; height: 6px; background: #fff; animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-  .main { display: grid; grid-template-columns: 280px 1fr; overflow: hidden; }
-  aside { background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; padding: 20px 16px; gap: 24px; }
-  aside::-webkit-scrollbar { width: 4px; }
-  aside::-webkit-scrollbar-thumb { background: var(--border2); }
+  .main { position: relative; display: grid; grid-template-columns: 320px minmax(0, 1fr); overflow: hidden; transition: grid-template-columns 0.2s ease; }
+  .main.is-sidebar-collapsed { grid-template-columns: 0 minmax(0, 1fr); }
+  .filter-sidebar { background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; padding: 18px 14px; gap: 22px; transition: opacity 0.2s ease, padding 0.2s ease, border-color 0.2s ease; }
+  .main.is-sidebar-collapsed .filter-sidebar { opacity: 0; pointer-events: none; padding-left: 0; padding-right: 0; border-color: transparent; overflow: hidden; }
+  .filter-sidebar::-webkit-scrollbar { width: 4px; }
+  .filter-sidebar::-webkit-scrollbar-thumb { background: var(--border2); }
+  .sidebar-handle {
+    position: absolute;
+    top: 50%;
+    left: 320px;
+    width: 18px;
+    height: 88px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-left: 0;
+    color: var(--text2);
+    cursor: pointer;
+    z-index: 20;
+    transform: translateY(-50%);
+    transition: left 0.2s ease, color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  }
+  .sidebar-handle:hover { color: var(--text); border-color: #fff; background: var(--bg3); }
+  .main.is-sidebar-collapsed .sidebar-handle {
+    left: 0;
+  }
+  .sidebar-handle i {
+    transition: transform 0.2s ease;
+  }
+  .main.is-sidebar-collapsed .sidebar-handle i {
+    transform: rotate(180deg);
+  }
 
   .section-label { font-size: 10px; font-weight: 600; letter-spacing: 1.2px; color: var(--text3); text-transform: uppercase; margin-bottom: 10px; }
+  .keyword-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 9px 10px;
+    border: 1px solid var(--border2);
+    background: rgba(255,255,255,0.05);
+    color: var(--text2);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  .keyword-notice i { color: #fff; font-size: 14px; }
   .keyword-group { display: flex; flex-direction: column; gap: 10px; }
   .input-wrap { position: relative; }
   .input-wrap .lbl { position: absolute; top: -8px; left: 10px; font-size: 10px; font-family: var(--font-mono); color: #fff; background: var(--bg2); padding: 0 4px; z-index:1; letter-spacing: 0.5px; }
@@ -65,34 +110,130 @@
   .type-count { margin-left: auto; font-size: 11px; font-family: var(--font-mono); background: var(--bg3); padding: 2px 7px; }
 
   .date-filter { display: flex; flex-direction: column; gap: 10px; }
-  .date-row-label { font-size: 10px; color: var(--text3); font-family: var(--font-mono); margin-bottom: 4px; letter-spacing: 0.5px; }
-  .date-selects { display: grid; grid-template-columns: 2fr 2.4fr 2.2fr; gap: 5px; }
-  .dsel { padding: 7px 6px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-size: 11px; font-family: var(--font-mono); outline: none; cursor: pointer; -webkit-appearance: none; transition: border-color 0.2s; width: 100%; }
-  .dsel:focus { border-color: #fff; }
-  .dsel option { background: #1a1e28; }
-  .date-arrow { display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 13px; padding: 2px 0; }
-  .date-summary { font-size: 11px; font-family: var(--font-mono); color: #fff; background: rgba(255,255,255,0.08); border: 1px solid var(--border2); padding: 6px 10px; text-align: center; min-height: 28px; }
+  .between-box {
+    border: 1px solid var(--border2);
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+    padding: 12px;
+  }
+  .between-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .between-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .between-clear {
+    background: transparent;
+    border: 0;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    padding: 0;
+    transition: color 0.18s ease;
+  }
+  .between-clear:hover { color: #fff; }
+  .between-inputs { display: block; }
+  .range-picker {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    background: rgba(0,0,0,0.32);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text);
+    font-size: 12px;
+    font-family: var(--font-mono);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease;
+  }
+  .range-picker:focus,
+  .range-picker:hover {
+    border-color: rgba(255,255,255,0.85);
+    background: rgba(0,0,0,0.45);
+  }
+  .flatpickr-calendar {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    box-shadow: 0 14px 40px rgba(0,0,0,0.35);
+  }
+  .flatpickr-calendar.arrowTop:before,
+  .flatpickr-calendar.arrowTop:after { display: none; }
+  .flatpickr-months .flatpickr-month,
+  .flatpickr-current-month,
+  .flatpickr-weekdays,
+  span.flatpickr-weekday,
+  .flatpickr-day,
+  .numInputWrapper span,
+  .flatpickr-monthDropdown-months,
+  .flatpickr-monthDropdown-month { color: var(--text); }
+  .flatpickr-monthDropdown-months,
+  .numInput.cur-year { background: var(--bg3); }
+  .flatpickr-day { border-color: transparent; }
+  .flatpickr-day.today { border-color: transparent; color: var(--text); }
+  .flatpickr-day.selected,
+  .flatpickr-day.startRange,
+  .flatpickr-day.endRange,
+  .flatpickr-day.today.selected,
+  .flatpickr-day.today.startRange,
+  .flatpickr-day.today.endRange {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+  }
+  .flatpickr-day.inRange {
+    background: rgba(255,255,255,0.12);
+    border-color: rgba(255,255,255,0.12);
+    color: #fff;
+    box-shadow: none;
+  }
+  .flatpickr-day:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.18);
+  }
+  .date-summary {
+    font-size: 12px;
+    font-family: var(--font-mono);
+    color: #fff;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border2);
+    padding: 12px 10px;
+    text-align: center;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+  }
 
   .btn-crawl { width: 100%; padding: 11px; background: #fff; border: none; color: #000; font-family: var(--font-head); font-weight: 700; font-size: 14px; cursor: pointer; letter-spacing: 0.3px; transition: opacity 0.2s, transform 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .btn-crawl:hover { opacity: 0.9; }
 
-  .content { display: flex; flex-direction: column; overflow: hidden; }
-  .toolbar { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--bg); }
+  .content { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+  .toolbar { display: flex; align-items: center; gap: 12px; padding: 16px 28px; border-bottom: 1px solid var(--border); background: var(--bg); }
   .search-bar { flex: 1; position: relative; }
   .search-bar input { width: 100%; padding: 9px 12px 9px 36px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-size: 13px; outline: none; font-family: var(--font-body); transition: border-color 0.2s; }
   .search-bar input:focus { border-color: #fff; }
   .search-bar input::placeholder { color: var(--text3); }
   .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 15px; }
 
-  .stats-bar { display: flex; gap: 20px; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--bg); font-size: 12px; }
+  .stats-bar { display: flex; gap: 20px; padding: 12px 28px; border-bottom: 1px solid var(--border); background: var(--bg); font-size: 12px; }
   .stat-item { display: flex; align-items: center; gap: 6px; color: var(--text2); }
   .stat-item strong { color: var(--text); font-family: var(--font-mono); font-size: 13px; }
   .stat-dot { width: 6px; height: 6px; background:#fff; }
 
-  .results { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .results { flex: 1; overflow-y: auto; padding: 22px 28px 18px; display: flex; flex-direction: column; gap: 12px; }
   .result-card { background: var(--bg2); border: 1px solid var(--border); padding: 16px; display: flex; gap: 14px; transition: border-color 0.2s, transform 0.15s; }
   .result-card:hover { border-color: var(--border2); }
   @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+  @keyframes shimmer {
+    0% { background-position: 100% 0; }
+    100% { background-position: -100% 0; }
+  }
 
   .card-icon { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border:1px solid var(--border2); }
   .icon-news { color: #fff; }
@@ -107,21 +248,52 @@
   .card-date { font-size: 11px; color: var(--text3); margin-left: auto; }
   .card-title { font-size: 14px; font-weight: 500; line-height: 1.45; margin-bottom: 5px; color: var(--text); }
   .card-snippet { font-size: 12px; color: var(--text2); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .card-footer { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
-  .card-action { padding: 4px 10px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); font-size: 11px; cursor: pointer; transition: 0.15s; text-decoration:none; }
-  .card-action:hover { color: #fff; border-color: #fff; }
+  .skeleton-card { pointer-events: none; }
+  .skeleton-icon,
+  .skeleton-pill,
+  .skeleton-line,
+  .skeleton-button {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.04) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.3s linear infinite;
+  }
+  .skeleton-icon { width: 42px; height: 42px; border: 1px solid var(--border2); flex-shrink: 0; }
+  .skeleton-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .skeleton-pill { width: 58px; height: 18px; border: 1px solid var(--border2); }
+  .skeleton-source { width: 86px; height: 12px; }
+  .skeleton-date { width: 74px; height: 12px; margin-left: auto; }
+  .skeleton-line { height: 12px; margin-bottom: 8px; }
+  .skeleton-line.lg { width: 84%; height: 14px; }
+  .skeleton-line.md { width: 96%; }
+  .skeleton-line.sm { width: 70%; margin-bottom: 0; }
+  .skeleton-footer { display: flex; justify-content: flex-end; margin-top: 12px; }
+  .skeleton-button { width: 72px; height: 24px; border: 1px solid var(--border2); }
 
   .empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text3); padding: 60px 0; }
   .empty i { font-size: 48px; }
 
-  .pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px 20px; border-top: 1px solid var(--border); }
+  .pagination { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px 28px; border-top: 1px solid var(--border); }
   .page-btn { padding: 6px 12px; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); font-size: 12px; cursor: pointer; font-family: var(--font-mono); transition: 0.15s; }
   .page-btn.active { background: rgba(255,255,255,0.14); border-color: #fff; color: #fff; }
   .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
   @media (max-width: 1024px) {
     .main { grid-template-columns: 1fr; }
-    aside { max-height: 50vh; }
+    .main.is-sidebar-collapsed { grid-template-columns: 1fr; }
+    .filter-sidebar { max-height: 50vh; }
+    .sidebar-handle {
+      top: 12px;
+      left: auto;
+      right: 12px;
+      width: 30px;
+      height: 30px;
+      transform: none;
+      border-left: 1px solid var(--border2);
+    }
+    .main.is-sidebar-collapsed .sidebar-handle {
+      left: auto;
+      right: 12px;
+    }
   }
 </style>
 </head>
@@ -136,8 +308,12 @@
   </nav>
 
   <div class="main">
-    <aside>
+    <button class="sidebar-handle" id="sidebarHandle" type="button" aria-label="Buka tutup panel kiri">
+      <i class="ti ti-chevron-left"></i>
+    </button>
+    <aside class="filter-sidebar">
       <div>
+        <div class="keyword-notice"><i class="ti ti-corner-down-left"></i> klik enter untuk memasukan keyword</div>
         <div class="section-label">Primary Keyword</div>
         <div class="keyword-group">
           <div class="input-wrap primary-tag">
@@ -173,21 +349,15 @@
       <div>
         <div class="section-label">Filter Tanggal</div>
         <div class="date-filter">
-          <div>
-            <div class="date-row-label">DARI</div>
-            <div class="date-selects">
-              <select class="dsel" id="fromDay"></select>
-              <select class="dsel" id="fromMonth"></select>
-              <select class="dsel" id="fromYear"></select>
+          <div class="between-box">
+            <div class="between-head">
+              <div class="between-label"><i class="ti ti-calendar-stats"></i> Between</div>
+              <button class="between-clear" id="clearDateBtn" type="button">clear</button>
             </div>
-          </div>
-          <div class="date-arrow"><i class="ti ti-arrows-down"></i></div>
-          <div>
-            <div class="date-row-label">SAMPAI</div>
-            <div class="date-selects">
-              <select class="dsel" id="toDay"></select>
-              <select class="dsel" id="toMonth"></select>
-              <select class="dsel" id="toYear"></select>
+            <div class="between-inputs">
+              <input class="range-picker" type="text" id="rangePicker" readonly placeholder="Pilih rentang tanggal">
+              <input type="hidden" id="fromDate">
+              <input type="hidden" id="toDate">
             </div>
           </div>
           <div class="date-summary" id="dateSummary">— pilih rentang tanggal —</div>
@@ -217,10 +387,13 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 let DATA = [];
 let activeType = 'all';
 let currentPage = 1;
+let isLoading = false;
+let rangePicker = null;
 const PER_PAGE = 10;
 const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
@@ -228,18 +401,18 @@ function getTags(listId) {
   return [...document.querySelectorAll(`#${listId} .tag`)].map(t => t.dataset.value).filter(Boolean);
 }
 
-function parseFilterDate(dayId, monthId, yearId, endOfDay = false) {
-  const d = Number(document.getElementById(dayId).value);
-  const m = Number(document.getElementById(monthId).value);
-  const y = Number(document.getElementById(yearId).value);
-  if (!d || !m || !y) return null;
-  return endOfDay ? new Date(y, m - 1, d, 23, 59, 59, 999) : new Date(y, m - 1, d, 0, 0, 0, 0);
+function parseDateInput(inputId, endOfDay = false) {
+  const value = document.getElementById(inputId).value;
+  if (!value) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return endOfDay ? new Date(year, month - 1, day, 23, 59, 59, 999) : new Date(year, month - 1, day, 0, 0, 0, 0);
 }
 
 function getFiltered() {
   const q = document.getElementById('searchInResults').value.toLowerCase();
-  const fromDate = parseFilterDate('fromDay', 'fromMonth', 'fromYear');
-  const toDate = parseFilterDate('toDay', 'toMonth', 'toYear', true);
+  const fromDate = parseDateInput('fromDate');
+  const toDate = parseDateInput('toDate', true);
 
   return DATA.filter(d => {
     const matchType = activeType === 'all' || d.type === activeType;
@@ -264,6 +437,7 @@ function formatDateID(dateStr) {
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+
 function updateCounters(filtered) {
   const news = filtered.filter(x => x.type === 'news').length;
   const journal = filtered.filter(x => x.type === 'journal').length;
@@ -275,7 +449,36 @@ function updateCounters(filtered) {
   document.getElementById('journalCount').textContent = journal;
 }
 
+function renderSkeletons(count = 5) {
+  const list = document.getElementById('resultsList');
+  const pg = document.getElementById('pagination');
+  list.innerHTML = Array.from({ length: count }, () => `
+    <div class="result-card skeleton-card">
+      <div class="skeleton-icon"></div>
+      <div class="card-body">
+        <div class="skeleton-meta">
+          <div class="skeleton-pill"></div>
+          <div class="skeleton-line skeleton-source"></div>
+          <div class="skeleton-line skeleton-date"></div>
+        </div>
+        <div class="skeleton-line lg"></div>
+        <div class="skeleton-line md"></div>
+        <div class="skeleton-line sm"></div>
+        <div class="skeleton-footer">
+          <div class="skeleton-button"></div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  pg.innerHTML = '';
+}
+
 function renderResults() {
+  if (isLoading) {
+    renderSkeletons();
+    return;
+  }
+
   const filtered = getFiltered();
   updateCounters(filtered);
 
@@ -292,28 +495,28 @@ function renderResults() {
     return;
   }
 
-  list.innerHTML = slice.map((d) => `
+  list.innerHTML = slice.map((d) => {
+    return `
     <div class="result-card">
       <div class="card-icon ${d.type === 'journal' ? 'icon-journal' : 'icon-news'}">
         <i class="ti ${d.type === 'journal' ? 'ti-book' : 'ti-news'}"></i>
       </div>
       <div class="card-body">
         <div class="card-meta">
-          <span class="type-badge ${d.type === 'journal' ? 'badge-journal' : 'badge-news'}">${d.type.toUpperCase()}</span>
+          <span class="type-badge ${d.type === 'journal' ? 'badge-journal' : 'badge-news'}">${(d.type || '-').toUpperCase()}</span>
           <span class="card-source">${d.source || 'Unknown'}</span>
           <span class="card-date"><i class="ti ti-calendar" style="font-size:11px"></i> ${formatDateID(d.date)}</span>
         </div>
         <div class="card-title">${d.title || '-'}</div>
         <div class="card-snippet">${d.matchedKeywords ? `Keyword: ${d.matchedKeywords}` : ''}</div>
-        <div class="card-footer">
-          <a class="card-action" target="_blank" rel="noopener noreferrer" href="${d.link || '#'}"><i class="ti ti-external-link" style="font-size:11px"></i> Buka</a>
-        </div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   renderPagination(pages);
 }
+
 
 function renderPagination(pages) {
   const pg = document.getElementById('pagination');
@@ -338,77 +541,78 @@ document.querySelectorAll('.type-btn').forEach(btn => {
   });
 });
 
+document.getElementById('sidebarHandle').addEventListener('click', () => {
+  document.querySelector('.main').classList.toggle('is-sidebar-collapsed');
+});
+
 document.getElementById('searchInResults').addEventListener('input', () => { currentPage = 1; renderResults(); });
 
-function fillDays(selId, max) {
-  const sel = document.getElementById(selId);
-  const cur = Number(sel.value);
-  sel.innerHTML = '';
-  for (let i = 1; i <= max; i++) {
-    const o = document.createElement('option');
-    o.value = i; o.textContent = String(i).padStart(2,'0');
-    sel.appendChild(o);
-  }
-  if (cur && cur <= max) sel.value = String(cur);
+function toInputDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
-function fillMonths(selId) {
-  const sel = document.getElementById(selId);
-  sel.innerHTML = MONTHS.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
-}
-function fillYears(selId) {
-  const sel = document.getElementById(selId);
-  const now = new Date().getFullYear();
-  sel.innerHTML = '';
-  for (let y = now; y >= now - 15; y--) {
-    const o = document.createElement('option');
-    o.value = y; o.textContent = y;
-    sel.appendChild(o);
-  }
-}
-function daysInMonth(month, year) { return new Date(year, month, 0).getDate(); }
 
 function updateDateSummary() {
-  const fd = document.getElementById('fromDay').value;
-  const fm = Number(document.getElementById('fromMonth').value);
-  const fy = document.getElementById('fromYear').value;
-  const td = document.getElementById('toDay').value;
-  const tm = Number(document.getElementById('toMonth').value);
-  const ty = document.getElementById('toYear').value;
+  const fromValue = document.getElementById('fromDate').value;
+  const toValue = document.getElementById('toDate').value;
   const el = document.getElementById('dateSummary');
-  if (!fd || !fm || !fy || !td || !tm || !ty) { el.textContent = '— pilih rentang tanggal —'; return; }
-  el.textContent = `${String(fd).padStart(2,'0')} ${MONTHS[fm-1].slice(0,3)} ${fy}  →  ${String(td).padStart(2,'0')} ${MONTHS[tm-1].slice(0,3)} ${ty}`;
+  const rangeInput = document.getElementById('rangePicker');
+  if (!fromValue && !toValue) {
+    rangeInput.value = '';
+    el.textContent = '- semua tanggal -';
+    return;
+  }
+
+  const format = (value) => {
+    if (!value) return 'awal';
+    const [year, month, day] = value.split('-');
+    return `${day} ${MONTHS[Number(month)-1].slice(0,3)} ${year}`;
+  };
+
+  rangeInput.value = toValue
+    ? `${format(fromValue)} -> ${format(toValue)}`
+    : format(fromValue);
+  el.textContent = toValue
+    ? `${format(fromValue)}  ->  ${format(toValue)}`
+    : `${format(fromValue)}  ->  akhir`;
 }
 
-function initDateDropdowns() {
+function initDateBetween() {
   const now = new Date();
-  const y = now.getFullYear(), m = now.getMonth()+1, d = now.getDate();
-  fillMonths('fromMonth'); fillMonths('toMonth');
-  fillYears('fromYear'); fillYears('toYear');
-  fillDays('fromDay', daysInMonth(m, y));
-  fillDays('toDay', daysInMonth(m, y));
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  document.getElementById('fromDate').value = toInputDate(firstDay);
+  document.getElementById('toDate').value = toInputDate(now);
 
-  document.getElementById('fromDay').value = '1';
-  document.getElementById('fromMonth').value = String(m);
-  document.getElementById('fromYear').value = String(y);
-  document.getElementById('toDay').value = String(d);
-  document.getElementById('toMonth').value = String(m);
-  document.getElementById('toYear').value = String(y);
+  rangePicker = flatpickr('#rangePicker', {
+    mode: 'range',
+    dateFormat: 'Y-m-d',
+    defaultDate: [toInputDate(firstDay), toInputDate(now)],
+    monthSelectorType: 'dropdown',
+    allowInput: false,
+    clickOpens: true,
+    locale: {
+      firstDayOfWeek: 0,
+    },
+    onChange(selectedDates) {
+      document.getElementById('fromDate').value = selectedDates[0] ? toInputDate(selectedDates[0]) : '';
+      document.getElementById('toDate').value = selectedDates[1] ? toInputDate(selectedDates[1]) : '';
+      updateDateSummary();
+      renderResults();
+    },
+  });
+
   updateDateSummary();
 }
 
-['fromMonth','fromYear','toMonth','toYear'].forEach(id => {
-  document.getElementById(id).addEventListener('change', () => {
-    const fm = Number(document.getElementById('fromMonth').value);
-    const fy = Number(document.getElementById('fromYear').value);
-    fillDays('fromDay', daysInMonth(fm, fy));
-    const tm = Number(document.getElementById('toMonth').value);
-    const ty = Number(document.getElementById('toYear').value);
-    fillDays('toDay', daysInMonth(tm, ty));
-    updateDateSummary();
-    renderResults();
-  });
+document.getElementById('clearDateBtn').addEventListener('click', () => {
+  document.getElementById('fromDate').value = '';
+  document.getElementById('toDate').value = '';
+  if (rangePicker) rangePicker.clear();
+  updateDateSummary();
+  renderResults();
 });
-['fromDay','toDay'].forEach(id => document.getElementById(id).addEventListener('change', () => { updateDateSummary(); renderResults(); }));
 
 function addTag(inputId, listId, cls) {
   const inp = document.getElementById(inputId);
@@ -447,11 +651,18 @@ async function runCrawl() {
     return;
   }
 
-  const fromYear = Number(document.getElementById('fromYear').value);
-  const toYear = Number(document.getElementById('toYear').value);
+  const fromDateValue = document.getElementById('fromDate').value || null;
+  const toDateValue = document.getElementById('toDate').value || null;
 
-  const payload = { primaryKeywords, secondaryKeywords, yearFrom: fromYear, yearTo: toYear };
+  const payload = {
+    primaryKeywords,
+    secondaryKeywords,
+    startDate: fromDateValue,
+    endDate: toDateValue,
+  };
   let response;
+  isLoading = true;
+  renderResults();
 
   try {
     response = await fetch('/api/crawl-all', {
@@ -477,6 +688,7 @@ async function runCrawl() {
   const data = await response.json();
   DATA = Array.isArray(data.results) ? data.results : [];
   currentPage = 1;
+  isLoading = false;
   renderResults();
 }
 
@@ -487,6 +699,8 @@ document.getElementById('crawlBtn').addEventListener('click', async () => {
   try {
     await runCrawl();
   } catch (e) {
+    isLoading = false;
+    renderResults();
     alert('Gagal crawl: ' + e.message);
   } finally {
     btn.innerHTML = '<i class="ti ti-radar" style="font-size:16px"></i> Mulai Crawling';
@@ -513,7 +727,7 @@ document.getElementById('secondaryTags').innerHTML = '';
   document.getElementById('secondaryTags').appendChild(s);
 });
 
-initDateDropdowns();
+initDateBetween();
 renderResults();
 </script>
 </body>
