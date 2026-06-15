@@ -428,14 +428,22 @@ app.post('/api/crawl-all', async (req, res) => {
                 ];
 
                 let addedNews = 0;
-                for (const url of feeds) {
+                const feedResponses = await Promise.allSettled(feeds.map(url => (
+                    axios.get(url, {
+                        headers: { 'User-Agent': 'Mozilla/5.0' },
+                        timeout: 8000
+                    }).then(response => ({ url, response }))
+                )));
+
+                for (const feedResult of feedResponses) {
                     if (addedNews >= 10) break;
+                    if (feedResult.status === 'rejected') {
+                        console.log("⚠️ News feed skip:", feedResult.reason?.message || 'Feed gagal');
+                        continue;
+                    }
 
                     try {
-                        const response = await axios.get(url, {
-                            headers: { 'User-Agent': 'Mozilla/5.0' },
-                            timeout: 15000
-                        });
+                        const { response } = feedResult.value;
 
                         const parsed = await new Promise((resolve, reject) => {
                             parseString(response.data, (err, result) => {
@@ -485,7 +493,8 @@ app.post('/api/crawl-all', async (req, res) => {
                     params: {
                         search: query,
                         per_page: 10
-                    }
+                    },
+                    timeout: 8000
                 });
 
                 const papers = response.data.results;
@@ -515,9 +524,6 @@ app.post('/api/crawl-all', async (req, res) => {
             } catch (err) {
                 console.log("❌ Journal error:", err.message);
             }
-
-            // Delay biar aman
-            await new Promise(r => setTimeout(r, 500));
         }
     }
 

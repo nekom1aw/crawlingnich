@@ -229,6 +229,15 @@
   .results { flex: 1; overflow-y: auto; padding: 22px 28px 18px; display: flex; flex-direction: column; gap: 12px; }
   .result-card { background: var(--bg2); border: 1px solid var(--border); padding: 16px; display: flex; gap: 14px; transition: border-color 0.2s, transform 0.15s; }
   .result-card:hover { border-color: var(--border2); }
+  .result-card.is-read {
+    background: linear-gradient(90deg, rgba(31, 130, 78, 0.28), rgba(255,255,255,0.025));
+    border-color: rgba(113, 255, 174, 0.82);
+    box-shadow: inset 3px 0 0 rgba(113, 255, 174, 0.9);
+  }
+  .result-card.is-read .card-icon {
+    border-color: rgba(113, 255, 174, 0.55);
+    color: #9dffc1;
+  }
   @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
   @keyframes shimmer {
     0% { background-position: 100% 0; }
@@ -248,6 +257,43 @@
   .card-date { font-size: 11px; color: var(--text3); margin-left: auto; }
   .card-title { font-size: 14px; font-weight: 500; line-height: 1.45; margin-bottom: 5px; color: var(--text); }
   .card-snippet { font-size: 12px; color: var(--text2); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-footer { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+  .card-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    background: #fff;
+    border: 1px solid #fff;
+    color: #000;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+  }
+  .card-open:hover { opacity: 0.86; }
+  .card-open.is-read {
+    background: #9dffc1;
+    border-color: #9dffc1;
+    color: #06130b;
+  }
+  .card-open.is-disabled {
+    pointer-events: none;
+    opacity: 0.35;
+  }
+  .read-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px;
+    border: 1px solid rgba(113, 255, 174, 0.58);
+    background: rgba(113, 255, 174, 0.12);
+    color: #9dffc1;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+  }
   .skeleton-card { pointer-events: none; }
   .skeleton-icon,
   .skeleton-pill,
@@ -395,6 +441,7 @@ let currentPage = 1;
 let isLoading = false;
 let rangePicker = null;
 const PER_PAGE = 10;
+const READ_LINKS_KEY = 'crawling-read-links';
 const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
 function getTags(listId) {
@@ -435,6 +482,44 @@ function formatDateID(dateStr) {
   const d = new Date(dateStr);
   if (Number.isNaN(d.getTime())) return '-';
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function safeLink(link) {
+  try {
+    const url = new URL(String(link || '').trim());
+    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+function getReadLinks() {
+  try {
+    const links = JSON.parse(localStorage.getItem(READ_LINKS_KEY) || '[]');
+    return Array.isArray(links) ? links : [];
+  } catch {
+    return [];
+  }
+}
+
+function hasReadLink(link) {
+  return getReadLinks().includes(link);
+}
+
+function markReadLink(link) {
+  if (!link) return;
+  const links = new Set(getReadLinks());
+  links.add(link);
+  localStorage.setItem(READ_LINKS_KEY, JSON.stringify([...links].slice(-500)));
 }
 
 
@@ -496,19 +581,31 @@ function renderResults() {
   }
 
   list.innerHTML = slice.map((d) => {
+    const link = safeLink(d.link);
+    const escapedLink = escapeHtml(link);
+    const isRead = Boolean(link && hasReadLink(link));
+    const cardClass = isRead ? 'result-card is-read' : 'result-card';
+    const openClass = link ? `card-open${isRead ? ' is-read' : ''}` : 'card-open is-disabled';
+    const readBadge = isRead ? '<span class="read-badge"><i class="ti ti-check"></i> Sudah dibaca</span>' : '';
     return `
-    <div class="result-card">
+    <div class="${cardClass}">
       <div class="card-icon ${d.type === 'journal' ? 'icon-journal' : 'icon-news'}">
         <i class="ti ${d.type === 'journal' ? 'ti-book' : 'ti-news'}"></i>
       </div>
       <div class="card-body">
         <div class="card-meta">
           <span class="type-badge ${d.type === 'journal' ? 'badge-journal' : 'badge-news'}">${(d.type || '-').toUpperCase()}</span>
-          <span class="card-source">${d.source || 'Unknown'}</span>
+          <span class="card-source">${escapeHtml(d.source || 'Unknown')}</span>
+          ${readBadge}
           <span class="card-date"><i class="ti ti-calendar" style="font-size:11px"></i> ${formatDateID(d.date)}</span>
         </div>
-        <div class="card-title">${d.title || '-'}</div>
-        <div class="card-snippet">${d.matchedKeywords ? `Keyword: ${d.matchedKeywords}` : ''}</div>
+        <div class="card-title">${escapeHtml(d.title || '-')}</div>
+        <div class="card-snippet">${d.matchedKeywords ? `Keyword: ${escapeHtml(d.matchedKeywords)}` : ''}</div>
+        <div class="card-footer">
+          <a class="${openClass}" href="${escapedLink || '#'}" data-read-link="${escapedLink}" target="_blank" rel="noopener noreferrer">
+            <i class="ti ti-external-link" style="font-size:12px"></i> Buka berita
+          </a>
+        </div>
       </div>
     </div>
   `;
@@ -546,6 +643,30 @@ document.getElementById('sidebarHandle').addEventListener('click', () => {
 });
 
 document.getElementById('searchInResults').addEventListener('input', () => { currentPage = 1; renderResults(); });
+
+document.getElementById('resultsList').addEventListener('click', (e) => {
+  const openLink = e.target.closest('.card-open:not(.is-disabled)');
+  if (!openLink) return;
+
+  const link = openLink.dataset.readLink || openLink.href;
+  markReadLink(link);
+  openLink.classList.add('is-read');
+
+  const card = openLink.closest('.result-card');
+  if (!card) return;
+  card.classList.add('is-read');
+
+  const meta = card.querySelector('.card-meta');
+  if (meta && !meta.querySelector('.read-badge')) {
+    const date = meta.querySelector('.card-date');
+    const badge = '<span class="read-badge"><i class="ti ti-check"></i> Sudah dibaca</span>';
+    if (date) {
+      date.insertAdjacentHTML('beforebegin', badge);
+    } else {
+      meta.insertAdjacentHTML('beforeend', badge);
+    }
+  }
+});
 
 function toInputDate(date) {
   const y = date.getFullYear();
