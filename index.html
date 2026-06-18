@@ -39,8 +39,8 @@
   .dot-pulse { width: 6px; height: 6px; background: #fff; animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-  .main { position: relative; display: grid; grid-template-columns: 320px minmax(0, 1fr); overflow: hidden; transition: grid-template-columns 0.2s ease; }
-  .main.is-sidebar-collapsed { grid-template-columns: 0 minmax(0, 1fr); }
+  .main { position: relative; display: grid; grid-template-columns: 320px minmax(0, 1fr) 420px; overflow: hidden; transition: grid-template-columns 0.2s ease; }
+  .main.is-sidebar-collapsed { grid-template-columns: 0 minmax(0, 1fr) 420px; }
   .filter-sidebar { background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; padding: 18px 14px; gap: 22px; transition: opacity 0.2s ease, padding 0.2s ease, border-color 0.2s ease; }
   .main.is-sidebar-collapsed .filter-sidebar { opacity: 0; pointer-events: none; padding-left: 0; padding-right: 0; border-color: transparent; overflow: hidden; }
   .filter-sidebar::-webkit-scrollbar { width: 4px; }
@@ -227,8 +227,9 @@
   .stat-dot { width: 6px; height: 6px; background:#fff; }
 
   .results { flex: 1; overflow-y: auto; padding: 22px 28px 18px; display: flex; flex-direction: column; gap: 12px; }
-  .result-card { background: var(--bg2); border: 1px solid var(--border); padding: 16px; display: flex; gap: 14px; transition: border-color 0.2s, transform 0.15s; }
+  .result-card { background: var(--bg2); border: 1px solid var(--border); padding: 16px; display: flex; gap: 14px; transition: border-color 0.2s, transform 0.15s; cursor: pointer; }
   .result-card:hover { border-color: var(--border2); }
+  .result-card.is-selected { border-color: #fff; background: rgba(255,255,255,0.055); }
   .result-card.is-read {
     background: linear-gradient(90deg, rgba(31, 130, 78, 0.28), rgba(255,255,255,0.025));
     border-color: rgba(113, 255, 174, 0.82);
@@ -294,6 +295,144 @@
     text-transform: uppercase;
     letter-spacing: 0.7px;
   }
+  .preview-panel {
+    min-width: 0;
+    background: var(--bg2);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .preview-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 28px;
+    text-align: center;
+    color: var(--text3);
+  }
+  .preview-empty i { font-size: 42px; color: var(--text2); }
+  .preview-empty strong { color: var(--text); font-family: var(--font-head); font-size: 18px; }
+  .preview-empty p { max-width: 270px; line-height: 1.6; font-size: 12px; }
+  .preview-content {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .preview-content[hidden],
+  .preview-empty[hidden] { display: none; }
+  .preview-top {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .preview-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .preview-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .preview-close {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text2);
+    cursor: pointer;
+  }
+  .preview-close:hover { color: #fff; border-color: #fff; }
+  .preview-title {
+    font-family: var(--font-head);
+    font-size: 18px;
+    line-height: 1.32;
+    font-weight: 700;
+  }
+  .preview-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    color: var(--text3);
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .preview-keywords {
+    color: var(--text2);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .preview-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    padding: 8px 10px;
+    background: #fff;
+    color: #000;
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .preview-frame-wrap {
+    flex: 1;
+    min-height: 0;
+    background: #080a0f;
+    position: relative;
+  }
+  .preview-frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #101217;
+  }
+  .preview-blocked {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    background: #0a0c10;
+  }
+  .preview-blocked[hidden] { display: none; }
+  .preview-blocked-card {
+    max-width: 310px;
+    border: 1px solid var(--border2);
+    background: rgba(255,255,255,0.04);
+    padding: 18px;
+    color: var(--text2);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .preview-blocked-card strong {
+    display: block;
+    color: #fff;
+    font-family: var(--font-head);
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .preview-note {
+    padding: 9px 16px;
+    border-top: 1px solid var(--border);
+    color: var(--text3);
+    font-size: 11px;
+    line-height: 1.5;
+  }
   .skeleton-card { pointer-events: none; }
   .skeleton-icon,
   .skeleton-pill,
@@ -327,6 +466,7 @@
     .main { grid-template-columns: 1fr; }
     .main.is-sidebar-collapsed { grid-template-columns: 1fr; }
     .filter-sidebar { max-height: 50vh; }
+    .preview-panel { display: none; }
     .sidebar-handle {
       top: 12px;
       left: auto;
@@ -430,6 +570,47 @@
       <div class="results" id="resultsList"></div>
       <div class="pagination" id="pagination"></div>
     </div>
+
+    <section class="preview-panel" id="previewPanel" aria-label="Preview berita">
+      <div class="preview-empty" id="previewEmpty">
+        <i class="ti ti-news"></i>
+        <strong>Preview Berita</strong>
+        <p>Klik area kartu berita di tengah untuk melihat preview di panel kanan. Tombol "Buka berita" tetap membuka tab baru.</p>
+      </div>
+
+      <div class="preview-content" id="previewContent" hidden>
+        <div class="preview-top">
+          <div class="preview-head">
+            <div class="preview-label"><i class="ti ti-layout-sidebar-right"></i> Preview</div>
+            <button class="preview-close" id="closePreviewBtn" type="button" aria-label="Tutup preview">
+              <i class="ti ti-x"></i>
+            </button>
+          </div>
+          <h2 class="preview-title" id="previewTitle">-</h2>
+          <div class="preview-meta">
+            <span id="previewType">-</span>
+            <span id="previewSource">-</span>
+            <span id="previewDate">-</span>
+          </div>
+          <div class="preview-keywords" id="previewKeywords"></div>
+          <a class="preview-link" id="previewOpenLink" href="#" target="_blank" rel="noopener noreferrer">
+            <i class="ti ti-external-link"></i> Buka berita asli
+          </a>
+        </div>
+        <div class="preview-frame-wrap">
+          <iframe class="preview-frame" id="previewFrame" title="Preview halaman berita" referrerpolicy="no-referrer" sandbox="allow-forms allow-popups allow-scripts allow-same-origin"></iframe>
+          <div class="preview-blocked" id="previewBlocked" hidden>
+            <div class="preview-blocked-card">
+              <strong id="previewBlockedTitle">Preview belum tersedia</strong>
+              <span id="previewBlockedText">Link berita kosong atau tidak bisa dibaca. Gunakan tombol "Buka berita asli".</span>
+            </div>
+          </div>
+        </div>
+        <div class="preview-note">
+          Preview memakai server lokal/API untuk membaca artikel. Kalau sumbernya terlalu ketat, gunakan tombol "Buka berita asli".
+        </div>
+      </div>
+    </section>
   </div>
 </div>
 
@@ -440,6 +621,7 @@ let activeType = 'all';
 let currentPage = 1;
 let isLoading = false;
 let rangePicker = null;
+let selectedPreviewIndex = null;
 const PER_PAGE = 10;
 const READ_LINKS_KEY = 'crawling-read-links';
 const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -500,6 +682,10 @@ function safeLink(link) {
   } catch {
     return '';
   }
+}
+
+function getPreviewUrl(link) {
+  return link ? `/api/preview?url=${encodeURIComponent(link)}` : 'about:blank';
 }
 
 function getReadLinks() {
@@ -581,14 +767,16 @@ function renderResults() {
   }
 
   list.innerHTML = slice.map((d) => {
+    const itemIndex = DATA.indexOf(d);
     const link = safeLink(d.link);
     const escapedLink = escapeHtml(link);
     const isRead = Boolean(link && hasReadLink(link));
-    const cardClass = isRead ? 'result-card is-read' : 'result-card';
+    const isSelected = itemIndex === selectedPreviewIndex;
+    const cardClass = `result-card${isRead ? ' is-read' : ''}${isSelected ? ' is-selected' : ''}`;
     const openClass = link ? `card-open${isRead ? ' is-read' : ''}` : 'card-open is-disabled';
     const readBadge = isRead ? '<span class="read-badge"><i class="ti ti-check"></i> Sudah dibaca</span>' : '';
     return `
-    <div class="${cardClass}">
+    <div class="${cardClass}" data-index="${itemIndex}">
       <div class="card-icon ${d.type === 'journal' ? 'icon-journal' : 'icon-news'}">
         <i class="ti ${d.type === 'journal' ? 'ti-book' : 'ti-news'}"></i>
       </div>
@@ -612,6 +800,51 @@ function renderResults() {
   }).join('');
 
   renderPagination(pages);
+}
+
+function showPreview(item, index) {
+  if (!item) return;
+
+  selectedPreviewIndex = index;
+  document.querySelectorAll('.result-card').forEach(card => {
+    card.classList.toggle('is-selected', Number(card.dataset.index) === selectedPreviewIndex);
+  });
+
+  const link = safeLink(item.link);
+  document.getElementById('previewEmpty').hidden = true;
+  document.getElementById('previewContent').hidden = false;
+  document.getElementById('previewTitle').textContent = item.title || '-';
+  document.getElementById('previewType').textContent = (item.type || '-').toUpperCase();
+  document.getElementById('previewSource').textContent = item.source || 'Unknown';
+  document.getElementById('previewDate').textContent = formatDateID(item.date);
+  document.getElementById('previewKeywords').textContent = item.matchedKeywords ? `Keyword: ${item.matchedKeywords}` : '';
+  document.getElementById('previewOpenLink').href = link || '#';
+
+  if (!link) {
+    showPreviewBlocked('URL tidak valid', 'Link berita kosong atau bukan URL yang bisa dibaca.');
+    return;
+  }
+
+  document.getElementById('previewBlocked').hidden = true;
+  document.getElementById('previewFrame').hidden = false;
+  document.getElementById('previewFrame').src = getPreviewUrl(link);
+}
+
+function clearPreview() {
+  selectedPreviewIndex = null;
+  document.querySelectorAll('.result-card').forEach(card => card.classList.remove('is-selected'));
+  document.getElementById('previewContent').hidden = true;
+  document.getElementById('previewEmpty').hidden = false;
+  document.getElementById('previewBlocked').hidden = true;
+  document.getElementById('previewFrame').src = 'about:blank';
+}
+
+function showPreviewBlocked(title, text) {
+  document.getElementById('previewBlockedTitle').textContent = title;
+  document.getElementById('previewBlockedText').textContent = text;
+  document.getElementById('previewFrame').hidden = true;
+  document.getElementById('previewFrame').src = 'about:blank';
+  document.getElementById('previewBlocked').hidden = false;
 }
 
 
@@ -646,27 +879,36 @@ document.getElementById('searchInResults').addEventListener('input', () => { cur
 
 document.getElementById('resultsList').addEventListener('click', (e) => {
   const openLink = e.target.closest('.card-open:not(.is-disabled)');
-  if (!openLink) return;
+  if (openLink) {
+    const link = openLink.dataset.readLink || openLink.href;
+    markReadLink(link);
+    openLink.classList.add('is-read');
 
-  const link = openLink.dataset.readLink || openLink.href;
-  markReadLink(link);
-  openLink.classList.add('is-read');
+    const card = openLink.closest('.result-card');
+    if (!card) return;
+    card.classList.add('is-read');
 
-  const card = openLink.closest('.result-card');
-  if (!card) return;
-  card.classList.add('is-read');
-
-  const meta = card.querySelector('.card-meta');
-  if (meta && !meta.querySelector('.read-badge')) {
-    const date = meta.querySelector('.card-date');
-    const badge = '<span class="read-badge"><i class="ti ti-check"></i> Sudah dibaca</span>';
-    if (date) {
-      date.insertAdjacentHTML('beforebegin', badge);
-    } else {
-      meta.insertAdjacentHTML('beforeend', badge);
+    const meta = card.querySelector('.card-meta');
+    if (meta && !meta.querySelector('.read-badge')) {
+      const date = meta.querySelector('.card-date');
+      const badge = '<span class="read-badge"><i class="ti ti-check"></i> Sudah dibaca</span>';
+      if (date) {
+        date.insertAdjacentHTML('beforebegin', badge);
+      } else {
+        meta.insertAdjacentHTML('beforeend', badge);
+      }
     }
+    return;
   }
+
+  const card = e.target.closest('.result-card:not(.skeleton-card)');
+  if (!card) return;
+  const index = Number(card.dataset.index);
+  if (Number.isNaN(index)) return;
+  showPreview(DATA[index], index);
 });
+
+document.getElementById('closePreviewBtn').addEventListener('click', clearPreview);
 
 function toInputDate(date) {
   const y = date.getFullYear();
