@@ -4,6 +4,9 @@
     { "src": "index.html", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "^/api/preview$", "dest": "/api/preview.js" },
+    { "src": "^/api/crawl-all$", "dest": "/api/crawl-all.js" },
+    { "src": "^/api/test$", "dest": "/api/test.js" },
     { "handle": "filesystem" },
     { "src": "^/$", "dest": "/index.html" }
   ]
