@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const { parseString } = require('xml2js');
 const cheerio = require('cheerio');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,7 +11,11 @@ const PORT = process.env.PORT || 3000;
 // MIDDLEWARE
 // =============================
 app.use(express.json());
-app.use(express.static('.'));
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+app.use('/src', express.static(path.join(__dirname, 'src')));
+app.use('/image', express.static(path.join(__dirname, 'image')));
 
 // CORS
 app.use((req, res, next) => {
