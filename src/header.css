@@ -1,0 +1,155 @@
+#appHeader {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(19, 22, 29, 0.98);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-nav {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 0 24px;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 42px;
+  min-width: 0;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+.logo-dot {
+  width: 9px;
+  height: 9px;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.06);
+}
+
+.nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.nav-link {
+  height: 32px;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 16px;
+  border: 1px solid var(--border2);
+  background: rgba(255,255,255,0.025);
+  color: var(--text2);
+  cursor: pointer;
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, transform 0.14s ease;
+}
+
+.nav-link i {
+  font-size: 15px;
+}
+
+.nav-link:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.55);
+  transform: translateY(-1px);
+}
+
+.nav-link.active {
+  color: #000;
+  background: #fff;
+  border-color: #fff;
+  cursor: default;
+  transform: none;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.badge-live {
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dot-pulse {
+  width: 6px;
+  height: 6px;
+  background: #9dffc1;
+  animation: pulse 1.5s infinite;
+}
+
+.nav-icon {
+  color: var(--text3);
+  font-size: 18px;
+}
+
+@media (max-width: 720px) {
+  .app-nav {
+    justify-content: space-between;
+    padding: 0 12px;
+    gap: 10px;
+  }
+
+  .nav-left {
+    gap: 14px;
+  }
+
+  .nav-logo {
+    font-size: 14px;
+  }
+
+  .nav-menu {
+    gap: 8px;
+  }
+
+  .nav-link {
+    width: 34px;
+    padding: 0;
+  }
+
+  .nav-link span,
+  .badge-live {
+    display: none;
+  }
+}

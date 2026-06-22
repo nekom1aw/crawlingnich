@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" href="/src/header.css">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
 
@@ -31,12 +32,6 @@
 
   body { font-family: var(--font-body); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
   .shell { display: grid; grid-template-rows: 56px 1fr; height: 100vh; overflow: hidden; }
-  nav { display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background: var(--bg2); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
-  .nav-logo { font-family: var(--font-head); font-weight: 800; font-size: 17px; letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; }
-  .logo-dot { width: 8px; height: 8px; background: #fff; }
-  .nav-right { display: flex; align-items: center; gap: 16px; }
-  .badge-live { display: flex; align-items: center; gap: 5px; font-size: 11px; font-family: var(--font-mono); color: #fff; padding: 3px 10px; border: 1px solid var(--border2); }
-  .dot-pulse { width: 6px; height: 6px; background: #fff; animation: pulse 1.5s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
   .main { position: relative; display: grid; grid-template-columns: 320px minmax(0, 1fr) 420px; overflow: hidden; transition: grid-template-columns 0.2s ease; }
@@ -212,6 +207,8 @@
 
   .btn-crawl { width: 100%; padding: 11px; background: #fff; border: none; color: #000; font-family: var(--font-head); font-weight: 700; font-size: 14px; cursor: pointer; letter-spacing: 0.3px; transition: opacity 0.2s, transform 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .btn-crawl:hover { opacity: 0.9; }
+  .btn-regional { width: 100%; padding: 10px; background: transparent; border: 1px solid var(--border2); color: #fff; font-family: var(--font-head); font-weight: 700; font-size: 13px; cursor: pointer; letter-spacing: 0.2px; transition: background 0.2s, border-color 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-regional:hover { background: rgba(255,255,255,0.08); border-color: #fff; }
 
   .content { display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
   .toolbar { display: flex; align-items: center; gap: 12px; padding: 16px 28px; border-bottom: 1px solid var(--border); background: var(--bg); }
@@ -220,6 +217,22 @@
   .search-bar input:focus { border-color: #fff; }
   .search-bar input::placeholder { color: var(--text3); }
   .search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 15px; }
+  .regional-input { position: relative; }
+  .regional-input input { width: 100%; height: 36px; padding: 0 11px 0 34px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); font-size: 12px; outline: none; font-family: var(--font-body); }
+  .regional-input input:focus { border-color: #fff; }
+  .regional-input .input-icon { left: 10px; }
+  .regional-tags { grid-column: 1 / -1; min-height: 0; max-width: 440px; }
+  .regional-bar {
+    display: grid;
+    grid-template-columns: minmax(220px, 320px) auto minmax(240px, 1fr);
+    gap: 10px;
+    align-items: center;
+    padding: 10px 24px;
+    background: #10131a;
+    border-bottom: 1px solid var(--border);
+  }
+  .regional-bar[hidden] { display: none; }
+  .regional-bar .regional-tags { grid-column: auto; max-width: none; }
 
   .stats-bar { display: flex; gap: 20px; padding: 12px 28px; border-bottom: 1px solid var(--border); background: var(--bg); font-size: 12px; }
   .stat-item { display: flex; align-items: center; gap: 6px; color: var(--text2); }
@@ -248,12 +261,14 @@
   .card-icon { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border:1px solid var(--border2); }
   .icon-news { color: #fff; }
   .icon-journal { color: #c6c9d2; }
+  .icon-regional { color: #9dffc1; }
 
   .card-body { flex: 1; min-width: 0; }
   .card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
   .type-badge { font-size: 10px; font-family: var(--font-mono); padding: 2px 8px; font-weight: 500; border:1px solid var(--border2); }
   .badge-news { color: #fff; }
   .badge-journal { color: #c6c9d2; }
+  .badge-regional { color: #9dffc1; border-color: rgba(113,255,174,0.42); }
   .card-source { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
   .card-date { font-size: 11px; color: var(--text3); margin-left: auto; }
   .card-title { font-size: 14px; font-weight: 500; line-height: 1.45; margin-bottom: 5px; color: var(--text); }
@@ -466,6 +481,8 @@
     .main { grid-template-columns: 1fr; }
     .main.is-sidebar-collapsed { grid-template-columns: 1fr; }
     .filter-sidebar { max-height: 50vh; }
+    .regional-bar { grid-template-columns: 1fr; padding: 10px 14px; }
+    .regional-tags { max-width: none; }
     .preview-panel { display: none; }
     .sidebar-handle {
       top: 12px;
@@ -485,13 +502,7 @@
 </head>
 <body>
 <div class="shell">
-  <nav>
-    <div class="nav-logo"><div class="logo-dot"></div>Crawling Beta test</div>
-    <div class="nav-right">
-      <div class="badge-live"><div class="dot-pulse"></div>ENGINE READY</div>
-      <i class="ti ti-settings" style="font-size:18px;color:var(--text3)"></i>
-    </div>
-  </nav>
+  <div id="appHeader"></div>
 
   <div class="main">
     <button class="sidebar-handle" id="sidebarHandle" type="button" aria-label="Buka tutup panel kiri">
@@ -529,6 +540,7 @@
           <button class="type-btn active" data-type="all"><i class="ti ti-world"></i> Semua <span class="type-count" id="cnt-all">0</span></button>
           <button class="type-btn" data-type="news"><i class="ti ti-news"></i> Berita <span class="type-count" id="cnt-berita">0</span></button>
           <button class="type-btn" data-type="journal"><i class="ti ti-book"></i> Jurnal <span class="type-count" id="cnt-jurnal">0</span></button>
+          <button class="type-btn" data-type="regional"><i class="ti ti-map-pin"></i> Isu Daerah <span class="type-count" id="cnt-regional">0</span></button>
         </div>
       </div>
 
@@ -565,6 +577,7 @@
         <div class="stat-item"><div class="stat-dot"></div><strong id="totalCount">0</strong> total hasil</div>
         <div class="stat-item"><div class="stat-dot"></div><strong id="newsCount">0</strong> berita</div>
         <div class="stat-item"><div class="stat-dot"></div><strong id="journalCount">0</strong> jurnal</div>
+        <div class="stat-item"><div class="stat-dot"></div><strong id="regionalCount">0</strong> isu daerah</div>
       </div>
 
       <div class="results" id="resultsList"></div>
@@ -614,6 +627,7 @@
   </div>
 </div>
 
+<script src="/src/header.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
 let DATA = [];
@@ -712,12 +726,21 @@ function markReadLink(link) {
 function updateCounters(filtered) {
   const news = filtered.filter(x => x.type === 'news').length;
   const journal = filtered.filter(x => x.type === 'journal').length;
+  const regional = filtered.filter(x => x.type === 'regional').length;
   document.getElementById('cnt-all').textContent = filtered.length;
   document.getElementById('cnt-berita').textContent = news;
   document.getElementById('cnt-jurnal').textContent = journal;
+  document.getElementById('cnt-regional').textContent = regional;
   document.getElementById('totalCount').textContent = filtered.length;
   document.getElementById('newsCount').textContent = news;
   document.getElementById('journalCount').textContent = journal;
+  document.getElementById('regionalCount').textContent = regional;
+}
+
+function getTypeMeta(type) {
+  if (type === 'journal') return { icon: 'ti-book', iconClass: 'icon-journal', badgeClass: 'badge-journal', label: 'JURNAL' };
+  if (type === 'regional') return { icon: 'ti-map-pin', iconClass: 'icon-regional', badgeClass: 'badge-regional', label: 'ISU' };
+  return { icon: 'ti-news', iconClass: 'icon-news', badgeClass: 'badge-news', label: 'BERITA' };
 }
 
 function renderSkeletons(count = 5) {
@@ -775,20 +798,21 @@ function renderResults() {
     const cardClass = `result-card${isRead ? ' is-read' : ''}${isSelected ? ' is-selected' : ''}`;
     const openClass = link ? `card-open${isRead ? ' is-read' : ''}` : 'card-open is-disabled';
     const readBadge = isRead ? '<span class="read-badge"><i class="ti ti-check"></i> Sudah dibaca</span>' : '';
+    const typeMeta = getTypeMeta(d.type);
     return `
     <div class="${cardClass}" data-index="${itemIndex}">
-      <div class="card-icon ${d.type === 'journal' ? 'icon-journal' : 'icon-news'}">
-        <i class="ti ${d.type === 'journal' ? 'ti-book' : 'ti-news'}"></i>
+      <div class="card-icon ${typeMeta.iconClass}">
+        <i class="ti ${typeMeta.icon}"></i>
       </div>
       <div class="card-body">
         <div class="card-meta">
-          <span class="type-badge ${d.type === 'journal' ? 'badge-journal' : 'badge-news'}">${(d.type || '-').toUpperCase()}</span>
+          <span class="type-badge ${typeMeta.badgeClass}">${typeMeta.label}</span>
           <span class="card-source">${escapeHtml(d.source || 'Unknown')}</span>
           ${readBadge}
           <span class="card-date"><i class="ti ti-calendar" style="font-size:11px"></i> ${formatDateID(d.date)}</span>
         </div>
         <div class="card-title">${escapeHtml(d.title || '-')}</div>
-        <div class="card-snippet">${d.matchedKeywords ? `Keyword: ${escapeHtml(d.matchedKeywords)}` : ''}</div>
+        <div class="card-snippet">${d.region ? `Daerah: ${escapeHtml(d.region)}${d.issue ? ` | Isu: ${escapeHtml(d.issue)}` : ''}` : (d.matchedKeywords ? `Keyword: ${escapeHtml(d.matchedKeywords)}` : '')}</div>
         <div class="card-footer">
           <a class="${openClass}" href="${escapedLink || '#'}" data-read-link="${escapedLink}" target="_blank" rel="noopener noreferrer">
             <i class="ti ti-external-link" style="font-size:12px"></i> Buka berita
@@ -814,10 +838,10 @@ function showPreview(item, index) {
   document.getElementById('previewEmpty').hidden = true;
   document.getElementById('previewContent').hidden = false;
   document.getElementById('previewTitle').textContent = item.title || '-';
-  document.getElementById('previewType').textContent = (item.type || '-').toUpperCase();
+  document.getElementById('previewType').textContent = getTypeMeta(item.type).label;
   document.getElementById('previewSource').textContent = item.source || 'Unknown';
   document.getElementById('previewDate').textContent = formatDateID(item.date);
-  document.getElementById('previewKeywords').textContent = item.matchedKeywords ? `Keyword: ${item.matchedKeywords}` : '';
+  document.getElementById('previewKeywords').textContent = item.region ? `Daerah: ${item.region}${item.issue ? ` | Isu: ${item.issue}` : ''}` : (item.matchedKeywords ? `Keyword: ${item.matchedKeywords}` : '');
   document.getElementById('previewOpenLink').href = link || '#';
 
   if (!link) {
@@ -998,7 +1022,6 @@ document.getElementById('primaryInput').addEventListener('keydown', e => {
 document.getElementById('secondaryInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); addTag('secondaryInput', 'secondaryTags', 'tag-secondary'); }
 });
-
 document.getElementById('primaryTags').addEventListener('click', e => {
   if (e.target.classList.contains('remove')) { e.target.parentElement.remove(); renderResults(); }
 });
@@ -1089,7 +1112,6 @@ document.getElementById('secondaryTags').innerHTML = '';
   s.innerHTML = `${v} <span class="remove">×</span>`;
   document.getElementById('secondaryTags').appendChild(s);
 });
-
 initDateBetween();
 renderResults();
 </script>
