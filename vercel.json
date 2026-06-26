@@ -1,16 +1,3 @@
 {
-  "builds": [
-    { "src": "api/*.js", "use": "@vercel/node" },
-    { "src": "index.html", "use": "@vercel/static" },
-    { "src": "isu-daerah.html", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "^/api/preview$", "dest": "/api/preview.js" },
-    { "src": "^/api/crawl-all$", "dest": "/api/crawl-all.js" },
-    { "src": "^/api/regional-issues$", "dest": "/api/regional-issues.js" },
-    { "src": "^/api/test$", "dest": "/api/test.js" },
-    { "handle": "filesystem" },
-    { "src": "^/isu-daerah$", "dest": "/isu-daerah.html" },
-    { "src": "^/$", "dest": "/index.html" }
-  ]
+  "framework": "nextjs"
 }

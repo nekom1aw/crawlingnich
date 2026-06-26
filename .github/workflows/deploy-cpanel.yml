@@ -1,0 +1,46 @@
+name: Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.CPANEL_SSH_KEY }}" > ~/.ssh/cpanel_key
+          chmod 600 ~/.ssh/cpanel_key
+          ssh-keyscan -p "${{ secrets.CPANEL_PORT }}" "${{ secrets.CPANEL_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload files to cPanel
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/cpanel_key -p ${{ secrets.CPANEL_PORT }}" \
+            --exclude ".git" \
+            --exclude ".github" \
+            --exclude ".next" \
+            --exclude "node_modules" \
+            --exclude ".env" \
+            --exclude ".env.*" \
+            ./ "${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}:${{ secrets.CPANEL_APP_DIR }}/"
+
+      - name: Install, build, and restart app
+        run: |
+          ssh -i ~/.ssh/cpanel_key -p "${{ secrets.CPANEL_PORT }}" "${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}" << 'EOF'
+            set -e
+            cd "${{ secrets.CPANEL_APP_DIR }}"
+            npm ci
+            npm run build
+            mkdir -p tmp
+            touch tmp/restart.txt
+          EOF

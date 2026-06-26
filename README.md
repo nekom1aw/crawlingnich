@@ -1,6 +1,6 @@
 # Crawling Beta Test
 
-Aplikasi dashboard Node.js untuk melakukan crawling berita, jurnal, preview artikel, dan pemantauan isu daerah secara realtime.
+Aplikasi dashboard Next.js untuk melakukan crawling berita, jurnal, preview artikel, ringkasan AI, dan pemantauan isu daerah secara realtime.
 
 ## Fitur
 
@@ -18,8 +18,8 @@ Aplikasi dashboard Node.js untuk melakukan crawling berita, jurnal, preview arti
 
 ## Teknologi
 
+- Next.js
 - Node.js
-- Express
 - Axios
 - Cheerio
 - xml2js
@@ -29,18 +29,21 @@ Aplikasi dashboard Node.js untuk melakukan crawling berita, jurnal, preview arti
 ## Struktur File Penting
 
 ```text
-server.js                 Server utama Express untuk cPanel/hosting Node.js
+server-next.js            Server Next.js untuk cPanel/hosting Node.js
+next.config.js            Rewrite route halaman HTML ke Next.js
 index.html                Halaman utama crawling berita dan jurnal
 isu-daerah.html           Halaman khusus pantau isu daerah
 summarized-ai.html        Halaman khusus ringkasan AI berita
-api/crawl-all.js          API serverless untuk Vercel
-api/preview.js            API preview serverless untuk Vercel
-api/regional-issues.js    API isu daerah serverless untuk Vercel
-api/ai-news-summary.js    API ringkasan AI serverless untuk Vercel
+pages/api/*.js            API route Next.js
+api/crawl-all.js          Logic API crawling
+api/preview.js            Logic API preview
+api/regional-issues.js    Logic API isu daerah
+api/ai-news-summary.js    Logic API ringkasan AI
 src/header.js             Header/menu shared
 src/header.css            Style header shared
+public/                   Asset statis yang dibaca Next.js
 package.json              Script dan dependency Node.js
-vercel.json               Konfigurasi deploy Vercel
+vercel.json               Konfigurasi framework Next.js untuk Vercel
 ```
 
 ## Menjalankan Lokal
@@ -51,9 +54,16 @@ Install dependency:
 npm install
 ```
 
-Jalankan server:
+Jalankan mode development:
 
 ```bash
+npm run dev
+```
+
+Atau build dan jalankan mode production seperti server:
+
+```bash
+npm run build
 npm start
 ```
 
@@ -198,16 +208,17 @@ Setting umum:
 Node.js version: 20.x atau lebih baru
 Application mode: Production
 Application root: crawling
-Application startup file: server.js
+Application startup file: server-next.js
 ```
 
 Upload file project ke folder application root, lalu jalankan:
 
 ```bash
 npm install
+npm run build
 ```
 
-Setelah itu klik **Restart** di Node.js App.
+Setelah itu klik **Restart** di Node.js App. Script `npm start` akan menjalankan Next.js lewat `server-next.js`.
 
 Test:
 
@@ -217,27 +228,54 @@ https://domainkamu.com/isu-daerah
 https://domainkamu.com/summarized-ai
 ```
 
-## Catatan Keamanan
+## Auto Deploy dari GitHub ke cPanel
 
-Server tidak lagi membuka seluruh root project sebagai static file. Yang dibuka untuk publik hanya route halaman, API, dan folder asset tertentu seperti:
+Project ini sudah punya GitHub Actions workflow:
 
 ```text
-/src
-/image
+.github/workflows/deploy-cpanel.yml
+```
+
+Setiap push ke branch `main` atau `master`, GitHub akan upload project ke cPanel lewat SSH, lalu menjalankan:
+
+```bash
+npm ci
+npm run build
+touch tmp/restart.txt
+```
+
+Buat Secrets ini di GitHub:
+
+```text
+CPANEL_HOST=host_ssh_cpanel
+CPANEL_PORT=22
+CPANEL_USER=username_cpanel
+CPANEL_SSH_KEY=private_key_ssh
+CPANEL_APP_DIR=/home/username_cpanel/path/aplikasi
+```
+
+File `.env` dan `.env.local` tidak ikut diupload dari GitHub. Isi environment production langsung di cPanel atau buat file `.env.local` manual di folder aplikasi server.
+
+## Catatan Keamanan
+
+Next.js tidak membuka seluruh root project sebagai static file. Yang dibuka untuk publik hanya route halaman, API, dan folder asset `public/`.
+
+```text
+public/src
+public/image
 ```
 
 File seperti `server.js` dan `package.json` seharusnya tidak bisa diakses publik.
 
 ## Deploy ke Vercel
 
-Project ini juga masih memiliki konfigurasi Vercel melalui:
+Project ini sudah memakai framework Next.js. Untuk Vercel, cukup deploy repo ini dan isi environment variable yang diperlukan.
 
 ```text
 vercel.json
-api/*.js
 ```
 
-Namun untuk menghindari limit serverless Vercel, deploy utama yang disarankan adalah hosting/cPanel yang mendukung Node.js.
+Namun untuk menghindari limit serverless Vercel, deploy utama yang disarankan tetap hosting/cPanel yang mendukung Node.js.
 
 ## File yang Jangan Diupload Jika ZIP Manual
 

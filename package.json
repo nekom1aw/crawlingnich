@@ -4,7 +4,12 @@
   "description": "Crawling berita dengan Tailwind CSS",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "sync:public": "node scripts/sync-public-assets.js",
+    "dev": "npm run sync:public && next dev",
+    "build": "npm run sync:public && next build",
+    "start": "npm run sync:public && node server-next.js",
+    "start:next": "next start",
+    "start:express": "node server.js"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.83",
@@ -15,6 +20,9 @@
     "axios": "^1.15.0",
     "cheerio": "^1.2.0",
     "express": "^4.22.1",
+    "next": "^16.2.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "tailwindcss": "^4.2.2",
     "xml2js": "^0.6.2"
   },

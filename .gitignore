@@ -1,4 +1,6 @@
 node_modules/
+.next/
+github-cpanel-key*
 .env
 .env.*
 !.env.example
