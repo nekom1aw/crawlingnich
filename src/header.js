@@ -6,6 +6,7 @@
     const path = window.location.pathname.replace(/\/+$/, '') || '/';
     const crawlingActive = path === '/';
     const regionalActive = path === '/isu-daerah';
+    const summarizedActive = path === '/summarized-ai';
 
     target.innerHTML = `
       <nav class="app-nav">
@@ -14,6 +15,7 @@
           <div class="nav-menu">
             <a class="nav-link ${crawlingActive ? 'active' : ''}" href="/"><i class="ti ti-radar"></i><span>Crawling</span></a>
             <a class="nav-link ${regionalActive ? 'active' : ''}" href="/isu-daerah"><i class="ti ti-map-pin"></i><span>Isu Daerah</span></a>
+            <a class="nav-link ${summarizedActive ? 'active' : ''}" href="/summarized-ai"><i class="ti ti-sparkles"></i><span>Summarized AI</span></a>
           </div>
         </div>
         <div class="nav-right">

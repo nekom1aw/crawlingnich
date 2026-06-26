@@ -46,6 +46,129 @@ function isWithinDateRange(dateValue, startDate, endDate) {
   return true;
 }
 
+function cleanText(value = "") {
+  return String(value).replace(/\s+/g, " ").trim();
+}
+
+function normalizeKeyword(value = "") {
+  return cleanText(value).toLowerCase();
+}
+
+function compactKeyword(value = "") {
+  return normalizeKeyword(value).replace(/[^a-z0-9]+/gi, "");
+}
+
+function getRssSnippet(item) {
+  return cleanText(
+    item?.description?.[0] ||
+    item?.["media:description"]?.[0] ||
+    item?.content?.[0] ||
+    ""
+  );
+}
+
+function isRelevantToKeywords(title = "", snippet = "", keywords = []) {
+  const haystack = normalizeKeyword(`${title} ${snippet}`);
+  const compactHaystack = compactKeyword(`${title} ${snippet}`);
+  return keywords
+    .map(normalizeKeyword)
+    .filter(Boolean)
+    .every((keyword) => haystack.includes(keyword) || compactHaystack.includes(compactKeyword(keyword)));
+}
+
+function isFeaturedCrawlResult(item = {}) {
+  const source = String(item.source || "").toLowerCase();
+  const link = String(item.link || "").toLowerCase();
+  return source.includes("betahita") || link.includes("betahita.id");
+}
+
+function getResultTime(dateValue) {
+  const time = new Date(dateValue || 0).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function prioritizeCrawlResults(items = []) {
+  return items
+    .map((item, index) => ({
+      ...item,
+      isFeatured: Boolean(item.isFeatured || isFeaturedCrawlResult(item)),
+      _order: index,
+    }))
+    .sort((a, b) => {
+      if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
+
+      const dateDiff = getResultTime(b.date) - getResultTime(a.date);
+      if (dateDiff) return dateDiff;
+
+      return a._order - b._order;
+    })
+    .map(({ _order, ...item }) => item);
+}
+
+async function fetchBingWebResults(query, keywords = [], maxItems = 8) {
+  const response = await axios.get("https://www.bing.com/search", {
+    params: { q: query, setlang: "id-ID" },
+    headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    },
+    timeout: 10000,
+    responseType: "text",
+  });
+
+  const cheerio = require("cheerio");
+  const $ = cheerio.load(response.data || "");
+  const results = [];
+
+  $("li.b_algo").each((_, el) => {
+    if (results.length >= maxItems) return false;
+    const anchor = $(el).find("h2 a").first();
+    const title = cleanText(anchor.text());
+    const link = anchor.attr("href") || "";
+    const snippet = cleanText(
+      $(el).find(".b_caption p").first().text() ||
+      $(el).find("p").first().text()
+    );
+
+    if (!title || !link) return;
+    if (!/^https?:\/\//i.test(link)) return;
+    if (keywords.length && !isRelevantToKeywords(title, snippet, keywords)) return;
+
+    results.push({
+      title,
+      link,
+      snippet,
+      source: extractSource(link),
+    });
+  });
+
+  return results;
+}
+
+async function fetchExpandedBingWebResults(query, keywords = [], maxItems = 12) {
+  const queryVariants = [
+    query,
+    `"${keywords.filter(Boolean).join("\" \"")}"`,
+    `${query} opini editorial`,
+  ].filter(Boolean);
+
+  const results = [];
+  const seen = new Set();
+
+  for (const variant of queryVariants) {
+    if (results.length >= maxItems) break;
+    const items = await fetchBingWebResults(variant, keywords, maxItems);
+    for (const item of items) {
+      if (results.length >= maxItems) break;
+      if (seen.has(item.link)) continue;
+      seen.add(item.link);
+      results.push(item);
+    }
+  }
+
+  return results;
+}
+
 module.exports = async function handler(req, res) {
   if (req.method === "GET") {
     return res.status(200).json({
@@ -127,13 +250,16 @@ module.exports = async function handler(req, res) {
                 if (!isWithinDateRange(isoDate, startBoundary, endBoundary)) continue;
 
                 seen.add(link);
+                const title = item.title?.[0] || "Tanpa Judul";
+                const snippet = getRssSnippet(item);
                 addedNews++;
                 results.push({
                   type: "news",
-                  title: item.title?.[0] || "Tanpa Judul",
+                  title,
                   link,
                   date: isoDate,
                   source: extractRssSource(item, link),
+                  snippet,
                   matchedKeywords: `${primary} + ${secondary}`,
                 });
               }
@@ -143,6 +269,25 @@ module.exports = async function handler(req, res) {
           }
         } catch (err) {
           console.log("News error:", err.message);
+        }
+
+        try {
+          const webResults = await fetchExpandedBingWebResults(query, [primary, secondary], 12);
+          for (const item of webResults) {
+            if (!item.link || seen.has(item.link)) continue;
+            seen.add(item.link);
+            results.push({
+              type: "news",
+              title: item.title,
+              link: item.link,
+              date: null,
+              source: item.source,
+              snippet: item.snippet,
+              matchedKeywords: `${primary} + ${secondary}`,
+            });
+          }
+        } catch (err) {
+          console.log("Web search fallback error:", err.message);
         }
 
         // JOURNAL
@@ -180,10 +325,12 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    const prioritizedResults = prioritizeCrawlResults(results);
+
     return res.status(200).json({
       success: true,
-      total: results.length,
-      results,
+      total: prioritizedResults.length,
+      results: prioritizedResults,
     });
   } catch (err) {
     console.error(err);

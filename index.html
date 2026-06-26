@@ -243,6 +243,7 @@
   .result-card { background: var(--bg2); border: 1px solid var(--border); padding: 16px; display: flex; gap: 14px; transition: border-color 0.2s, transform 0.15s; cursor: pointer; }
   .result-card:hover { border-color: var(--border2); }
   .result-card.is-selected { border-color: #fff; background: rgba(255,255,255,0.055); }
+  .result-card.is-featured { border-color: rgba(255,255,255,0.72); box-shadow: inset 3px 0 0 #fff; }
   .result-card.is-read {
     background: linear-gradient(90deg, rgba(31, 130, 78, 0.28), rgba(255,255,255,0.025));
     border-color: rgba(113, 255, 174, 0.82);
@@ -269,6 +270,7 @@
   .badge-news { color: #fff; }
   .badge-journal { color: #c6c9d2; }
   .badge-regional { color: #9dffc1; border-color: rgba(113,255,174,0.42); }
+  .featured-badge { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border: 1px solid rgba(255,255,255,0.72); background: #fff; color: #000; font-family: var(--font-mono); font-size: 10px; line-height: 1.3; text-transform: uppercase; }
   .card-source { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
   .card-date { font-size: 11px; color: var(--text3); margin-left: auto; }
   .card-title { font-size: 14px; font-weight: 500; line-height: 1.45; margin-bottom: 5px; color: var(--text); }
@@ -657,7 +659,7 @@ function getFiltered() {
   const fromDate = parseDateInput('fromDate');
   const toDate = parseDateInput('toDate', true);
 
-  return DATA.filter(d => {
+  return prioritizeClientResults(DATA.filter(d => {
     const matchType = activeType === 'all' || d.type === activeType;
     const matchQ = !q || (d.title || '').toLowerCase().includes(q);
 
@@ -665,19 +667,46 @@ function getFiltered() {
     const validDate = itemDate && !Number.isNaN(itemDate.getTime());
 
     if (fromDate || toDate) {
-      if (!validDate) return false;
+      if (!validDate) return matchType && matchQ;
       if (fromDate && itemDate < fromDate) return false;
       if (toDate && itemDate > toDate) return false;
     }
 
     return matchType && matchQ;
-  });
+  }));
 }
 
 function formatDateID(dateStr) {
+  if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return 'Tanggal tidak tersedia';
   const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return '-';
+  if (Number.isNaN(d.getTime()) || d.getFullYear() <= 1970) return 'Tanggal tidak tersedia';
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function isFeaturedResult(item = {}) {
+  return Boolean(item.isFeatured || /betahita/i.test(`${item.source || ''} ${item.link || ''}`));
+}
+
+function resultTime(item = {}) {
+  if (!item.date) return 0;
+  const time = new Date(item.date).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function prioritizeClientResults(items = []) {
+  return items
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const aFeatured = isFeaturedResult(a.item);
+      const bFeatured = isFeaturedResult(b.item);
+      if (aFeatured !== bFeatured) return aFeatured ? -1 : 1;
+
+      const dateDiff = resultTime(b.item) - resultTime(a.item);
+      if (dateDiff) return dateDiff;
+
+      return a.index - b.index;
+    })
+    .map(entry => entry.item);
 }
 
 function escapeHtml(value = '') {
@@ -795,9 +824,11 @@ function renderResults() {
     const escapedLink = escapeHtml(link);
     const isRead = Boolean(link && hasReadLink(link));
     const isSelected = itemIndex === selectedPreviewIndex;
-    const cardClass = `result-card${isRead ? ' is-read' : ''}${isSelected ? ' is-selected' : ''}`;
+    const isFeatured = isFeaturedResult(d);
+    const cardClass = `result-card${isFeatured ? ' is-featured' : ''}${isRead ? ' is-read' : ''}${isSelected ? ' is-selected' : ''}`;
     const openClass = link ? `card-open${isRead ? ' is-read' : ''}` : 'card-open is-disabled';
     const readBadge = isRead ? '<span class="read-badge"><i class="ti ti-check"></i> Sudah dibaca</span>' : '';
+    const featuredBadge = isFeatured ? '<span class="featured-badge"><i class="ti ti-star-filled"></i> Prioritas</span>' : '';
     const typeMeta = getTypeMeta(d.type);
     return `
     <div class="${cardClass}" data-index="${itemIndex}">
@@ -808,11 +839,12 @@ function renderResults() {
         <div class="card-meta">
           <span class="type-badge ${typeMeta.badgeClass}">${typeMeta.label}</span>
           <span class="card-source">${escapeHtml(d.source || 'Unknown')}</span>
+          ${featuredBadge}
           ${readBadge}
           <span class="card-date"><i class="ti ti-calendar" style="font-size:11px"></i> ${formatDateID(d.date)}</span>
         </div>
         <div class="card-title">${escapeHtml(d.title || '-')}</div>
-        <div class="card-snippet">${d.region ? `Daerah: ${escapeHtml(d.region)}${d.issue ? ` | Isu: ${escapeHtml(d.issue)}` : ''}` : (d.matchedKeywords ? `Keyword: ${escapeHtml(d.matchedKeywords)}` : '')}</div>
+        <div class="card-snippet">${d.region ? `Daerah: ${escapeHtml(d.region)}${d.issue ? ` | Isu: ${escapeHtml(d.issue)}` : ''}` : (d.snippet ? escapeHtml(d.snippet) : (d.matchedKeywords ? `Keyword: ${escapeHtml(d.matchedKeywords)}` : ''))}</div>
         <div class="card-footer">
           <a class="${openClass}" href="${escapedLink || '#'}" data-read-link="${escapedLink}" target="_blank" rel="noopener noreferrer">
             <i class="ti ti-external-link" style="font-size:12px"></i> Buka berita

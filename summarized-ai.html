@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Summarized AI</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@500;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="/src/header.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
+  :root {
+    --bg: #0d0f14;
+    --bg2: #13161d;
+    --bg3: #1a1e28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0f2f8;
+    --text2: #8b90a0;
+    --text3: #555c6e;
+    --green: #9dffc1;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+  body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 14px; overflow: hidden; }
+  .shell { height: 100vh; display: grid; grid-template-rows: 56px 1fr; }
+  .page { min-height: 0; display: grid; grid-template-columns: minmax(360px, 520px) minmax(0, 1fr); overflow: hidden; }
+  .composer { min-width: 0; background: var(--bg2); border-right: 1px solid var(--border); padding: 22px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+  .section-label { color: var(--text3); font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+  .prompt-box { border: 1px solid var(--border2); background: rgba(255,255,255,0.035); }
+  .prompt-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 14px; border-bottom: 1px solid var(--border); }
+  .prompt-title { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-head); font-weight: 800; font-size: 18px; }
+  .prompt-status { color: var(--text3); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; }
+  textarea { width: 100%; min-height: 170px; resize: vertical; padding: 14px; background: var(--bg3); border: 0; border-bottom: 1px solid var(--border); color: var(--text); outline: none; font-family: var(--font-body); font-size: 14px; line-height: 1.65; }
+  textarea::placeholder { color: var(--text3); }
+  .controls { display: flex; gap: 10px; padding: 12px 14px; }
+  .btn { height: 40px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #fff; background: #fff; color: #000; font-family: var(--font-head); font-weight: 700; cursor: pointer; }
+  .btn.secondary { background: transparent; color: var(--text2); border-color: var(--border2); }
+  .btn:disabled { opacity: 0.65; cursor: wait; }
+  .hint { color: var(--text2); font-size: 12px; line-height: 1.7; border: 1px solid var(--border); padding: 13px; background: rgba(0,0,0,0.18); }
+  .hint code { color: #fff; font-family: var(--font-mono); }
+  .results-area { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .summary-panel { border-bottom: 1px solid var(--border); background: #10131a; padding: 18px 22px; flex-shrink: 0; }
+  .summary-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .summary-title { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  .summary-meta { color: var(--text3); font-family: var(--font-mono); font-size: 10px; }
+  .summary-text { white-space: pre-wrap; color: var(--text); background: rgba(0,0,0,0.24); border: 1px solid var(--border2); padding: 14px; line-height: 1.7; min-height: 150px; max-height: min(46vh, 430px); overflow-y: auto; overscroll-behavior: contain; }
+  .articles { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; }
+  .article-card { display: flex; gap: 13px; padding: 15px; background: var(--bg2); border: 1px solid var(--border); }
+  .article-icon { width: 38px; height: 38px; display: grid; place-items: center; flex-shrink: 0; border: 1px solid var(--border2); color: #fff; }
+  .article-body { min-width: 0; flex: 1; }
+  .article-meta { display: flex; flex-wrap: wrap; gap: 8px; color: var(--text3); font-family: var(--font-mono); font-size: 11px; margin-bottom: 7px; }
+  .article-title { color: var(--text); font-size: 14px; line-height: 1.45; margin-bottom: 10px; }
+  .article-open { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: #fff; color: #000; text-decoration: none; font-family: var(--font-mono); font-size: 11px; }
+  .empty { flex: 1; display: grid; place-items: center; color: var(--text3); text-align: center; line-height: 1.7; }
+  @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+  @media (max-width: 980px) {
+    body { overflow: auto; }
+    .shell { min-height: 100vh; height: auto; }
+    .page { grid-template-columns: 1fr; overflow: visible; }
+    .results-area { min-height: 70vh; }
+    .summary-text { max-height: 55vh; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div id="appHeader"></div>
+
+  <main class="page">
+    <aside class="composer">
+      <div class="section-label">AI News Assistant</div>
+      <section class="prompt-box">
+        <div class="prompt-head">
+          <div class="prompt-title"><i class="ti ti-sparkles"></i> Summarized AI</div>
+          <div class="prompt-status" id="aiStatus">ready</div>
+        </div>
+        <textarea id="aiPrompt" placeholder="Contoh: carikan berita terbaru tentang konflik orangutan dan perdagangan satwa di Kalimantan, lalu ringkas poin pentingnya."></textarea>
+        <div class="controls">
+          <button class="btn" id="summarizeBtn" type="button"><i class="ti ti-message-search"></i> Cari & Ringkas</button>
+          <button class="btn secondary" id="clearBtn" type="button"><i class="ti ti-refresh"></i> Clear</button>
+        </div>
+      </section>
+      <div class="hint">
+        Ketik seperti chat. Sistem mencari berita dari RSS Google/Bing, lalu membuat ringkasan memakai Vercel AI SDK + Gemini jika <code>GEMINI_API_KEY</code> tersedia. Kalau key belum ada, aplikasi mencoba mode lain dan tetap membuat ringkasan gratis berbasis judul berita.
+      </div>
+    </aside>
+
+    <section class="results-area">
+      <div class="summary-panel">
+        <div class="summary-head">
+          <div class="summary-title"><i class="ti ti-file-analytics"></i> Ringkasan</div>
+          <div class="summary-meta" id="summaryMeta">belum ada pencarian</div>
+        </div>
+        <div class="summary-text" id="summaryText">Masukkan permintaan berita di kiri, lalu klik Cari & Ringkas.</div>
+      </div>
+      <div class="articles" id="articlesList">
+        <div class="empty"><div><i class="ti ti-news" style="font-size:48px"></i><p>Daftar berita sumber akan muncul di sini.</p></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="/src/header.js"></script>
+<script>
+let ARTICLES = [];
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function safeLink(link) {
+  try {
+    const url = new URL(String(link || '').trim());
+    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+function formatDateID(dateStr) {
+  if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return 'Tanggal tidak tersedia';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime()) || d.getFullYear() <= 1970) return 'Tanggal tidak tersedia';
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function renderArticles() {
+  const list = document.getElementById('articlesList');
+  if (!ARTICLES.length) {
+    list.innerHTML = '<div class="empty"><div><i class="ti ti-news" style="font-size:48px"></i><p>Daftar berita sumber akan muncul di sini.</p></div></div>';
+    return;
+  }
+
+  list.innerHTML = ARTICLES.map((item) => {
+    const link = safeLink(item.link);
+    return `
+      <article class="article-card">
+        <div class="article-icon"><i class="ti ti-news"></i></div>
+        <div class="article-body">
+          <div class="article-meta">
+            <span>${escapeHtml(item.source || 'Unknown')}</span>
+            <span>${formatDateID(item.date)}</span>
+          </div>
+          <h3 class="article-title">${escapeHtml(item.title || '-')}</h3>
+          <a class="article-open" href="${escapeHtml(link || '#')}" target="_blank" rel="noopener noreferrer"><i class="ti ti-external-link"></i> Buka berita</a>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+async function runSummary() {
+  const query = document.getElementById('aiPrompt').value.trim();
+  if (!query) {
+    alert('Tulis dulu berita apa yang mau dicari.');
+    return;
+  }
+
+  const btn = document.getElementById('summarizeBtn');
+  const status = document.getElementById('aiStatus');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2" style="font-size:16px;animation:spin 1s linear infinite"></i> Memproses...';
+  status.textContent = 'searching';
+  document.getElementById('summaryText').textContent = 'Mencari berita dan membuat ringkasan...';
+  document.getElementById('summaryMeta').textContent = 'sedang diproses';
+  ARTICLES = [];
+  renderArticles();
+
+  try {
+    const response = await fetch('/api/ai-news-summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || data.error || 'Gagal membuat ringkasan');
+
+    ARTICLES = Array.isArray(data.results) ? data.results : [];
+    document.getElementById('summaryText').textContent = data.summary || 'Ringkasan tidak tersedia.';
+    const provider = data.provider || (data.aiEnabled ? 'ai' : 'fallback');
+    document.getElementById('summaryMeta').textContent = `${ARTICLES.length} berita | ${provider}`;
+    status.textContent = provider;
+    renderArticles();
+  } catch (err) {
+    document.getElementById('summaryText').textContent = err.message;
+    document.getElementById('summaryMeta').textContent = 'gagal';
+    status.textContent = 'error';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-message-search"></i> Cari & Ringkas';
+  }
+}
+
+document.getElementById('summarizeBtn').addEventListener('click', runSummary);
+document.getElementById('clearBtn').addEventListener('click', () => {
+  document.getElementById('aiPrompt').value = '';
+  document.getElementById('summaryText').textContent = 'Masukkan permintaan berita di kiri, lalu klik Cari & Ringkas.';
+  document.getElementById('summaryMeta').textContent = 'belum ada pencarian';
+  document.getElementById('aiStatus').textContent = 'ready';
+  ARTICLES = [];
+  renderArticles();
+});
+document.getElementById('aiPrompt').addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') runSummary();
+});
+</script>
+</body>
+</html>
