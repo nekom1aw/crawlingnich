@@ -23,27 +23,39 @@ jobs:
 
       - name: Upload files to cPanel
         run: |
-          rsync -az --delete \
-            -e "ssh -i ~/.ssh/cpanel_key -p 2223 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
-            --exclude ".git" \
-            --exclude ".github" \
-            --exclude ".next" \
-            --exclude "node_modules" \
-            --exclude ".env" \
-            --exclude ".env.*" \
-            ./ "crak4345@serayu.iixcp.rumahweb.net:/home/crak4345/crawlingnich/"
+          tar \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.next' \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            --exclude='.env.*' \
+            -czf deploy.tar.gz .
 
-      - name: Install, build, and restart app
+          scp -i ~/.ssh/cpanel_key -P 2223 \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            deploy.tar.gz \
+            crak4345@serayu.iixcp.rumahweb.net:/home/crak4345/crawlingnich/deploy.tar.gz
+
+      - name: Extract, install, build, and restart app
         run: |
-          ssh -i ~/.ssh/cpanel_key -p 2223 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "crak4345@serayu.iixcp.rumahweb.net" << 'EOF'
+          ssh -i ~/.ssh/cpanel_key -p 2223 \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            crak4345@serayu.iixcp.rumahweb.net << 'EOF'
             set -e
 
             source /home/crak4345/nodevenv/crawlingnich/20/bin/activate
             cd /home/crak4345/crawlingnich
 
-            rm -rf .next
+            tar -xzf deploy.tar.gz
+            rm -f deploy.tar.gz
 
-            npm ci
+            rm -rf .next
+            rm -rf node_modules
+
+            npm install
             npm run build
 
             mkdir -p tmp
