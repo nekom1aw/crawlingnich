@@ -383,6 +383,20 @@ async function summarizeNewsWithAI(query, articles) {
     };
 }
 
+function formatSearchDate(date) {
+    if (!date || Number.isNaN(date.getTime())) return '';
+    return date.toISOString().slice(0, 10);
+}
+
+function appendSearchDateRange(query, startDate = null, endDate = null) {
+    const start = formatSearchDate(startDate);
+    const end = formatSearchDate(endDate);
+    const parts = [query];
+    if (start) parts.push(`after:${start}`);
+    if (end) parts.push(`before:${end}`);
+    return parts.join(' ');
+}
+
 async function fetchNewsFeedItems(query, maxItems = 8) {
     const feeds = [
         `https://www.bing.com/news/search?q=${encodeURIComponent(query)}&format=rss&setlang=id-ID`,
@@ -1190,7 +1204,8 @@ app.post('/api/regional-issues', async (req, res) => {
         for (const topic of REGIONAL_ISSUE_TOPICS) {
             if (hasRegionLimit && addedForRegion >= numericLimit) break;
 
-            const query = `${region} ${topic.terms.slice(0, 3).join(' OR ')}`;
+            const baseQuery = `${region} ${topic.terms.slice(0, 3).join(' OR ')}`;
+            const query = appendSearchDateRange(baseQuery, startBoundary, endBoundary);
             try {
                 const remaining = hasRegionLimit ? numericLimit - addedForRegion : 40;
                 const items = await fetchNewsFeedItems(query, Math.max(1, remaining));
