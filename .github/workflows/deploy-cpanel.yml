@@ -20,7 +20,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.CPANEL_SSH_KEY }}" > ~/.ssh/cpanel_key
           chmod 600 ~/.ssh/cpanel_key
-          ssh-keyscan -p 22 "${{ secrets.CPANEL_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -p 22 serayu.iixcp.rumahweb.net >> ~/.ssh/known_hosts
 
       - name: Upload files to cPanel
         run: |
@@ -32,11 +32,11 @@ jobs:
             --exclude "node_modules" \
             --exclude ".env" \
             --exclude ".env.*" \
-            ./ "${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}:${{ secrets.CPANEL_APP_DIR }}/"
+            ./ "crak4345@serayu.iixcp.rumahweb.net:/home/crak4345/crawlingnich/"
 
       - name: Install, build, and restart app
         run: |
-          ssh -i ~/.ssh/cpanel_key -p 22 "${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}" << 'EOF'
+          ssh -i ~/.ssh/cpanel_key -p 22 "crak4345@serayu.iixcp.rumahweb.net" << 'EOF'
             set -e
 
             source /home/crak4345/nodevenv/crawlingnich/20/bin/activate
