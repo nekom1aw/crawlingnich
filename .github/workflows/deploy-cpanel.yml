@@ -10,6 +10,12 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      CPANEL_HOST: serayu.iixcp.rumahweb.net
+      CPANEL_PORT: 2223
+      CPANEL_USER: crak4345
+      CPANEL_APP_DIR: /home/crak4345/crawlingnich
+      CPANEL_NODE_ENV: /home/crak4345/nodevenv/crawlingnich/20/bin/activate
 
     steps:
       - name: Checkout repository
@@ -22,7 +28,7 @@ jobs:
 
       - name: Install and build on GitHub
         run: |
-          npm ci
+          npm install --no-audit --no-fund
           npm run build
 
       - name: Setup SSH key
@@ -30,37 +36,37 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "${{ secrets.CPANEL_SSH_KEY }}" > ~/.ssh/cpanel_key
           chmod 600 ~/.ssh/cpanel_key
+          ssh-keyscan -p "$CPANEL_PORT" "$CPANEL_HOST" >> ~/.ssh/known_hosts
 
       - name: Create deploy archive
         run: |
           tar \
             --exclude='.git' \
             --exclude='.github' \
+            --exclude='.next/cache' \
             --exclude='node_modules' \
             --exclude='.env' \
-            --exclude='.env.*' \
+            --exclude='.env.local' \
+            --exclude='github-cpanel-key*' \
+            --exclude='github-cpanel-rsa*' \
             -czf /tmp/deploy.tar.gz .
 
       - name: Upload archive to cPanel
         run: |
-          scp -i ~/.ssh/cpanel_key -P 2223 \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
+          ssh -i ~/.ssh/cpanel_key -p "$CPANEL_PORT" "$CPANEL_USER@$CPANEL_HOST" "mkdir -p '$CPANEL_APP_DIR'"
+          scp -i ~/.ssh/cpanel_key -P "$CPANEL_PORT" \
             /tmp/deploy.tar.gz \
-            crak4345@serayu.iixcp.rumahweb.net:/home/crak4345/crawlingnich/deploy.tar.gz
+            "$CPANEL_USER@$CPANEL_HOST:$CPANEL_APP_DIR/deploy.tar.gz"
 
       - name: Extract and install production dependencies
         run: |
-          ssh -i ~/.ssh/cpanel_key -p 2223 \
-            -o StrictHostKeyChecking=no \
-            -o UserKnownHostsFile=/dev/null \
-            crak4345@serayu.iixcp.rumahweb.net << 'EOF'
+          ssh -i ~/.ssh/cpanel_key -p "$CPANEL_PORT" "$CPANEL_USER@$CPANEL_HOST" << EOF
             set -e
 
-            source /home/crak4345/nodevenv/crawlingnich/20/bin/activate
-            cd /home/crak4345/crawlingnich
+            source "$CPANEL_NODE_ENV"
+            cd "$CPANEL_APP_DIR"
 
-            tar -xzf deploy.tar.gz
+            tar --no-same-owner -xzf deploy.tar.gz
             rm -f deploy.tar.gz
 
             rm -rf node_modules
