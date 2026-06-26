@@ -18,14 +18,13 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.CPANEL_SSH_KEY }}" > ~/.ssh/cpanel_key
+          printf '%s\n' "${{ secrets.CPANEL_SSH_KEY }}" > ~/.ssh/cpanel_key
           chmod 600 ~/.ssh/cpanel_key
-          ssh-keyscan -p 22 serayu.iixcp.rumahweb.net >> ~/.ssh/known_hosts
 
       - name: Upload files to cPanel
         run: |
           rsync -az --delete \
-            -e "ssh -i ~/.ssh/cpanel_key -p 22" \
+            -e "ssh -i ~/.ssh/cpanel_key -p 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             --exclude ".git" \
             --exclude ".github" \
             --exclude ".next" \
@@ -36,7 +35,7 @@ jobs:
 
       - name: Install, build, and restart app
         run: |
-          ssh -i ~/.ssh/cpanel_key -p 22 "crak4345@serayu.iixcp.rumahweb.net" << 'EOF'
+          ssh -i ~/.ssh/cpanel_key -p 22 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "crak4345@serayu.iixcp.rumahweb.net" << 'EOF'
             set -e
 
             source /home/crak4345/nodevenv/crawlingnich/20/bin/activate
