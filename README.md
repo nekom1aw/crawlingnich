@@ -30,15 +30,16 @@ Aplikasi dashboard Next.js untuk melakukan crawling berita, jurnal, preview arti
 
 ```text
 server-next.js            Server Next.js untuk cPanel/hosting Node.js
-next.config.js            Rewrite route halaman HTML ke Next.js
-index.html                Halaman utama crawling berita dan jurnal
-isu-daerah.html           Halaman khusus pantau isu daerah
-summarized-ai.html        Halaman khusus ringkasan AI berita
-pages/api/*.js            API route Next.js
-api/crawl-all.js          Logic API crawling
-api/preview.js            Logic API preview
-api/regional-issues.js    Logic API isu daerah
-api/ai-news-summary.js    Logic API ringkasan AI
+next.config.js            Konfigurasi Next.js
+app/                      Route App Router Next.js dan halaman TSX
+app/page.tsx              Halaman utama crawling berita dan jurnal
+app/isu-daerah/page.tsx   Halaman khusus pantau isu daerah
+app/summarized-ai/page.tsx Halaman khusus ringkasan AI berita
+app/api/*/route.js        API route App Router Next.js
+lib/server/crawl-all.js   Logic server crawling
+lib/server/preview.js     Logic server preview
+lib/server/regional-issues.js Logic server isu daerah
+lib/server/ai-news-summary.js Logic server ringkasan AI
 src/header.js             Header/menu shared
 src/header.css            Style header shared
 public/                   Asset statis yang dibaca Next.js

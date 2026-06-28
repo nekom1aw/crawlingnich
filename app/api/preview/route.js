@@ -1,0 +1,8 @@
+const { runNodeHandler } = require('../_node-handler/adapter');
+const handler = require('../../../lib/server/preview');
+
+function GET(request) {
+  return runNodeHandler(handler, request);
+}
+
+module.exports = { GET };

@@ -3,9 +3,6 @@ const path = require('path');
 
 const root = process.cwd();
 const files = [
-  ['index.html', 'public/index.html'],
-  ['isu-daerah.html', 'public/isu-daerah.html'],
-  ['summarized-ai.html', 'public/summarized-ai.html'],
   ['src/header.js', 'public/src/header.js'],
   ['src/header.css', 'public/src/header.css'],
   ['src/input.css', 'public/src/input.css'],
