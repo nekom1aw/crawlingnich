@@ -33,7 +33,8 @@ function createRequest(request, body) {
     url: `${url.pathname}${url.search}`,
     query,
     body,
-    headers: Object.fromEntries(request.headers.entries())
+    headers: Object.fromEntries(request.headers.entries()),
+    signal: request.signal
   };
 }
 

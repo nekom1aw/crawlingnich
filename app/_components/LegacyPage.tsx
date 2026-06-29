@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
 type LegacyPageProps = {
   title: string;
   fontsHref: string;
   extraStylesheets?: string[];
   styleText: string;
-  bodyHtml: string;
+  bodyHtml?: string;
+  children?: ReactNode;
   scriptText: string;
   beforeScriptSrc?: string[];
 };
@@ -18,6 +19,7 @@ export default function LegacyPage({
   extraStylesheets = [],
   styleText,
   bodyHtml,
+  children,
   scriptText,
   beforeScriptSrc = []
 }: LegacyPageProps) {
@@ -100,7 +102,7 @@ export default function LegacyPage({
         precedence="default"
         dangerouslySetInnerHTML={{ __html: styleText }}
       />
-      <div dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+      {children || <div dangerouslySetInnerHTML={{ __html: bodyHtml || '' }} />}
     </>
   );
 }
