@@ -49,11 +49,68 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 min-height: 100vh;
                 margin: 0;
                 background: transparent;
-                transition: opacity 0.16s ease;
+                transition: opacity 0.2s ease, filter 0.2s ease;
               }
 
               body.is-page-leaving {
-                opacity: 0.72;
+                opacity: 0.86;
+                filter: blur(1px);
+                pointer-events: none;
+              }
+
+              @view-transition {
+                navigation: auto;
+              }
+
+              ::view-transition-old(root),
+              ::view-transition-new(root) {
+                animation-duration: 0.28s;
+                animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+              }
+
+              ::view-transition-old(root) {
+                animation-name: page-out;
+              }
+
+              ::view-transition-new(root) {
+                animation-name: page-in;
+              }
+
+              @keyframes page-out {
+                from {
+                  opacity: 1;
+                  transform: translateY(0) scale(1);
+                  filter: blur(0);
+                }
+                to {
+                  opacity: 0;
+                  transform: translateY(6px) scale(0.992);
+                  filter: blur(4px);
+                }
+              }
+
+              @keyframes page-in {
+                from {
+                  opacity: 0;
+                  transform: translateY(8px) scale(0.992);
+                  filter: blur(4px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0) scale(1);
+                  filter: blur(0);
+                }
+              }
+
+              @media (prefers-reduced-motion: reduce) {
+                body {
+                  transition: none;
+                }
+
+                ::view-transition-old(root),
+                ::view-transition-new(root) {
+                  animation-duration: 0.01ms;
+                }
               }
             `
           }}

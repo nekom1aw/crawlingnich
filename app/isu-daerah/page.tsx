@@ -36,7 +36,7 @@ html {
 body {
   background: transparent !important;
   color: var(--text);
-  padding: 14px;
+  padding: 0;
 }
 
 body::before,
@@ -68,7 +68,8 @@ body::after {
   position: relative;
   z-index: 1;
   grid-template-rows: 64px auto 1fr;
-  height: calc(100vh - 28px);
+  width: 100vw;
+  height: 100vh;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.68);
   border-radius: 28px !important;
@@ -204,7 +205,7 @@ body::after {
   overflow-x: hidden;
   align-content: start;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 520px;
+  grid-auto-rows: 760px;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
@@ -276,8 +277,9 @@ body::after {
 .issue-btn { border-color: rgba(255,255,255,0.62); background: rgba(255,255,255,0.44); color: var(--text2); border-radius: 999px !important; }
 .issue-btn.active { color: #fff; background: linear-gradient(180deg, rgba(98,163,255,0.98), rgba(49,119,246,0.96)); border-color: rgba(49,119,246,0.3); }
 .region-list {
-  padding: 14px;
+  padding: 12px 14px 14px;
   background: rgba(255,255,255,0.1);
+  gap: 10px;
 }
 .region-list::-webkit-scrollbar { width: 5px; }
 .region-list::-webkit-scrollbar-thumb { background: rgba(93,121,160,0.22); border-radius: 999px !important; }
@@ -285,16 +287,45 @@ body::after {
 .card {
   background: rgba(255,255,255,0.36);
   border: 1px solid rgba(255,255,255,0.62);
+  padding: 12px;
+  gap: 10px;
+  min-height: 150px;
+  flex: 0 0 auto;
+  align-items: flex-start;
   transition: border-color 0.2s, transform 0.15s, background 0.18s ease;
 }
 .card:hover { border-color: rgba(70,134,238,0.24); transform: translateY(-1px); background: rgba(255,255,255,0.5); }
-.card-icon { border-color: rgba(31,195,140,0.24); background: rgba(255,255,255,0.42); color: #168c68; }
-.meta { color: var(--text3); }
+.card-icon { width: 34px; height: 34px; border-color: rgba(31,195,140,0.24); background: rgba(255,255,255,0.42); color: #168c68; }
+.card-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.meta { color: var(--text3); gap: 6px; margin-bottom: 6px; font-size: 10px; }
 .badge { color: #168c68; border-color: rgba(31,195,140,0.24); background: rgba(31,195,140,0.12); border-radius: 999px !important; }
 .date { color: var(--text2); }
-.title { color: var(--text); font-weight: 700; }
-.snippet { color: var(--text2); }
-.open { background: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.74); color: var(--text); border-radius: 999px !important; }
+.title {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.38;
+  margin-bottom: 5px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.snippet { color: var(--text2); font-size: 12px; line-height: 1.45; }
+.open {
+  width: fit-content;
+  margin-top: 10px;
+  padding: 5px 10px;
+  flex: 0 0 auto;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.74);
+  color: var(--text);
+  border-radius: 999px !important;
+}
 .open:hover { background: rgba(255,255,255,0.88); }
 .empty { color: var(--text3); }
 
@@ -403,10 +434,10 @@ html[data-theme="dark"] .card-icon {
 }
 
 @media (max-width: 1024px) {
-  body { padding: 10px; }
-  .shell { min-height: calc(100vh - 20px); height: auto; border-radius: 24px !important; }
+  body { padding: 0; }
+  .shell { min-height: 100vh; height: auto; }
   .control-band { grid-template-columns: 1fr; padding: 12px 14px; }
-  .results { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 500px; }
+  .results { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 720px; }
 }
 
 @media (max-width: 720px) {
@@ -424,8 +455,383 @@ html[data-theme="dark"] .card-icon {
   .stats { gap: 8px; }
   .stats span { width: calc(50% - 4px); justify-content: center; }
   .stats #scanStatus { width: 100%; }
-  .results { grid-template-columns: 1fr; grid-auto-rows: 520px; }
+  .results { grid-template-columns: 1fr; grid-auto-rows: 720px; }
 }
+`;
+
+const monochromeRegionalTheme = String.raw`
+:root {
+  --bg: #f4f4f1;
+  --bg2: rgba(255,255,255,0.52);
+  --bg3: rgba(255,255,255,0.78);
+  --border: rgba(0,0,0,0.13);
+  --border2: rgba(0,0,0,0.2);
+  --text: #111111;
+  --text2: #4d4d4d;
+  --text3: #777777;
+  --green: #111111;
+  --accent: #111111;
+  --shadow: 0 24px 80px rgba(0,0,0,0.11);
+  --shadow-soft: 0 12px 36px rgba(0,0,0,0.08);
+  color-scheme: light;
+}
+
+*, *::before, *::after {
+  border-radius: 0 !important;
+}
+
+.shell,
+#appHeader,
+.app-nav,
+.nav-menu,
+.nav-link,
+.nav-link.active,
+.nav-link:hover,
+.logo-dot,
+.badge-live,
+.dot-pulse,
+.theme-toggle,
+.control-band,
+.input-wrap input,
+.btn,
+.tag,
+.stats span,
+.region-group,
+.region-head,
+.region-count,
+.issue-filter,
+.issue-select-wrap,
+.issue-select,
+.issue-select-wrap::after,
+.issue-btn,
+.issue-btn.active,
+.results,
+.region-list,
+.card,
+.card-icon,
+.badge,
+.open,
+.empty {
+  border-radius: 0 !important;
+}
+
+html {
+  background:
+    linear-gradient(rgba(0,0,0,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,0,0,0.035) 1px, transparent 1px),
+    linear-gradient(180deg, #fafafa 0%, #f0f0ec 100%);
+  background-size: 32px 32px, 32px 32px, auto;
+}
+
+body {
+  background: transparent !important;
+  color: var(--text);
+}
+
+body::before,
+body::after {
+  display: none;
+}
+
+.shell {
+  border: 1px solid rgba(0,0,0,0.14);
+  background: rgba(255,255,255,0.44);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(22px) saturate(112%);
+  -webkit-backdrop-filter: blur(22px) saturate(112%);
+}
+
+#appHeader,
+.control-band,
+.stats {
+  background: rgba(255,255,255,0.48) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  backdrop-filter: blur(18px) saturate(110%);
+  -webkit-backdrop-filter: blur(18px) saturate(110%);
+}
+
+.logo-dot,
+.dot-pulse {
+  background: #111;
+  box-shadow: none;
+}
+
+.nav-menu,
+.theme-toggle,
+.badge-live,
+.input-wrap input,
+.btn,
+.tag,
+.stats span,
+.region-group,
+.region-count,
+.issue-select,
+.card,
+.card-icon,
+.badge,
+.open {
+  border: 1px solid rgba(0,0,0,0.14);
+  background: rgba(255,255,255,0.46);
+  box-shadow: none;
+}
+
+.nav-menu {
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.nav-link {
+  background: rgba(255,255,255,0.46);
+  border-color: rgba(0,0,0,0.14);
+  color: var(--text2);
+}
+
+.nav-link:hover {
+  color: #000;
+  background: rgba(0,0,0,0.06);
+  border-color: rgba(0,0,0,0.14);
+  box-shadow: none;
+}
+
+.nav-link.active,
+.btn,
+.issue-btn.active {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+  box-shadow: none;
+}
+
+.btn:hover,
+.open:hover,
+.theme-toggle:hover,
+.issue-select:hover,
+.card:hover {
+  background: rgba(255,255,255,0.72);
+  border-color: rgba(0,0,0,0.28);
+  box-shadow: none;
+}
+
+.btn:hover {
+  background: #000;
+  border-color: #000;
+}
+
+.tag,
+.region-count,
+.badge,
+.card-icon {
+  color: #111;
+}
+
+.region-group {
+  background: rgba(255,255,255,0.36);
+  backdrop-filter: blur(18px) saturate(108%);
+  -webkit-backdrop-filter: blur(18px) saturate(108%);
+}
+
+.region-head,
+.issue-filter {
+  background: transparent;
+  box-shadow: none;
+}
+
+.issue-filter {
+  border-bottom-color: rgba(0,0,0,0.1);
+}
+
+.region-list {
+  background: rgba(255,255,255,0.16);
+}
+
+.card {
+  background: rgba(255,255,255,0.42);
+  border-color: rgba(0,0,0,0.12);
+}
+
+.card:hover {
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.62);
+}
+
+.open {
+  color: #111;
+  background: rgba(255,255,255,0.54);
+}
+
+.results::-webkit-scrollbar-thumb,
+.region-list::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.2);
+}
+
+html[data-theme="dark"] {
+  --bg: #050505;
+  --bg2: rgba(12,12,12,0.62);
+  --bg3: rgba(20,20,20,0.72);
+  --border: rgba(255,255,255,0.14);
+  --border2: rgba(255,255,255,0.22);
+  --text: #f4f4f4;
+  --text2: #b5b5b5;
+  --text3: #7c7c7c;
+  --green: #f4f4f4;
+  --accent: #f4f4f4;
+  --shadow: 0 24px 80px rgba(0,0,0,0.42);
+  --shadow-soft: 0 12px 36px rgba(0,0,0,0.28);
+  background:
+    linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px),
+    linear-gradient(180deg, #050505 0%, #101010 100%);
+  background-size: 32px 32px, 32px 32px, auto;
+}
+
+html[data-theme="dark"] .shell,
+html[data-theme="dark"] #appHeader,
+html[data-theme="dark"] .control-band,
+html[data-theme="dark"] .stats {
+  background: rgba(10,10,10,0.58) !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+
+html[data-theme="dark"] .nav-menu,
+html[data-theme="dark"] .theme-toggle,
+html[data-theme="dark"] .badge-live,
+html[data-theme="dark"] .input-wrap input,
+html[data-theme="dark"] .tag,
+html[data-theme="dark"] .stats span,
+html[data-theme="dark"] .region-group,
+html[data-theme="dark"] .region-count,
+html[data-theme="dark"] .issue-select,
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .card-icon,
+html[data-theme="dark"] .badge,
+html[data-theme="dark"] .open {
+  background: rgba(18,18,18,0.58);
+  border-color: rgba(255,255,255,0.14);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .nav-menu {
+  background: transparent;
+  border: 0;
+}
+
+html[data-theme="dark"] .logo-dot,
+html[data-theme="dark"] .dot-pulse {
+  background: #fff;
+}
+
+html[data-theme="dark"] .nav-link:hover,
+html[data-theme="dark"] .theme-toggle:hover,
+html[data-theme="dark"] .issue-select:hover,
+html[data-theme="dark"] .card:hover,
+html[data-theme="dark"] .open:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.28);
+}
+
+html[data-theme="dark"] .nav-link.active,
+html[data-theme="dark"] .btn,
+html[data-theme="dark"] .issue-btn.active {
+  background: #fff;
+  border-color: #fff;
+  color: #000;
+}
+
+html[data-theme="dark"] .btn:hover {
+  background: #f4f4f4;
+  border-color: #f4f4f4;
+}
+
+html[data-theme="dark"] .tag,
+html[data-theme="dark"] .region-count,
+html[data-theme="dark"] .badge,
+html[data-theme="dark"] .card-icon {
+  color: #fff;
+}
+`;
+
+const regionalIconAndLinkGuardTheme = String.raw`
+.open,
+html[data-theme="dark"] .open {
+  background: #fff !important;
+  border-color: #fff !important;
+  color: #000 !important;
+  opacity: 1;
+}
+
+.open:hover,
+html[data-theme="dark"] .open:hover {
+  background: #f1f1f1 !important;
+  border-color: #f1f1f1 !important;
+  color: #000 !important;
+}
+
+.hero-icon {
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+  vertical-align: -0.14em;
+}
+`;
+
+const regionalIconAndLinkGuardScript = String.raw`
+function isAssetUrl(url) {
+  const host = url.hostname.replace(/^www\./i, '').toLowerCase();
+  const path = url.pathname.toLowerCase();
+  if (['fonts.googleapis.com', 'fonts.gstatic.com'].includes(host)) return true;
+  return /\.(css|js|mjs|json|xml|woff2?|ttf|otf|eot|png|jpe?g|gif|webp|svg|ico|mp4|webm|mp3|wav)$/i.test(path);
+}
+
+function safeLink(link) {
+  try {
+    const url = new URL(String(link || '').trim());
+    if (!['http:', 'https:'].includes(url.protocol)) return '';
+    if (isAssetUrl(url)) return '';
+    return url.toString();
+  } catch {
+    return '';
+  }
+}
+
+const HERO_ICON_PATHS = {
+  radar: '<path d="M12 19a7 7 0 1 0-7-7"/><path d="M12 15a3 3 0 1 0-3-3"/><path d="M12 12 4.5 4.5"/>',
+  satellite: '<path d="m13.5 6.5 4 4"/><path d="m10 10 4 4"/><path d="M8 12 4.5 8.5a2 2 0 0 1 0-2.8l1.2-1.2a2 2 0 0 1 2.8 0L12 8"/><path d="m16 12 3.5 3.5a2 2 0 0 1 0 2.8l-1.2 1.2a2 2 0 0 1-2.8 0L12 16"/><path d="M8 16a6 6 0 0 0-6 6"/><path d="M8 20a2 2 0 0 0-2 2"/>',
+  'map-pin': '<path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"/><path d="M12 10.5h.01"/>',
+  'map-search': '<path d="M9 18 3 21V6l6-3 6 3 6-3v10"/><path d="M9 3v15"/><path d="M15 6v6"/><path d="m21 21-3.5-3.5"/><path d="M16.5 18a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/>',
+  news: '<path d="M6 5h9.5A2.5 2.5 0 0 1 18 7.5V19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z"/><path d="M18 8h1a1 1 0 0 1 1 1v8a2 2 0 0 1-2 2"/><path d="M8 9h6"/><path d="M8 13h7"/><path d="M8 16h4"/>',
+  'news-off': '<path d="M6 5h9.5A2.5 2.5 0 0 1 18 7.5V18"/><path d="M18 8h1a1 1 0 0 1 1 1v8a2 2 0 0 1-.5 1.3"/><path d="M4 4 20 20"/><path d="M6 19a2 2 0 0 1-2-2V7"/><path d="M8 13h4"/><path d="M8 16h7"/>',
+  'external-link': '<path d="M13 5h6v6"/><path d="m10 14 9-9"/><path d="M19 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4"/>',
+  'loader-2': '<path d="M12 3a9 9 0 1 0 9 9"/>',
+  sun: '<path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  moon: '<path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z"/>',
+};
+
+function heroIconSvg(name, className = '', style = '') {
+  const path = HERO_ICON_PATHS[name] || HERO_ICON_PATHS.news;
+  const classes = (className + ' hero-icon').trim();
+  const styleAttr = style ? ' style="' + escapeHtml(style) + '"' : '';
+  return '<svg class="' + classes + '"' + styleAttr + ' viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + path + '</svg>';
+}
+
+function applyHeroIcons(root = document) {
+  root.querySelectorAll('i.ti').forEach((icon) => {
+    const iconClass = [...icon.classList].find((name) => name.startsWith('ti-') && name !== 'ti');
+    if (!iconClass) return;
+    const keepClasses = [...icon.classList].filter((name) => name !== 'ti' && !name.startsWith('ti-')).join(' ');
+    icon.outerHTML = heroIconSvg(iconClass.replace(/^ti-/, ''), keepClasses, icon.getAttribute('style') || '');
+  });
+}
+
+applyHeroIcons();
+new MutationObserver((mutations) => {
+  for (const mutation of mutations) {
+    mutation.addedNodes.forEach((node) => {
+      if (node.nodeType === 1) applyHeroIcons(node);
+    });
+  }
+}).observe(document.body, { childList: true, subtree: true });
 `;
 
 export default function RegionalIssuesPage() {
@@ -433,11 +839,11 @@ export default function RegionalIssuesPage() {
     <LegacyPage
       title="Isu Daerah Realtime"
       fontsHref="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
-      extraStylesheets={["https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"]}
+      extraStylesheets={[]}
       beforeScriptSrc={[]}
-      styleText={`${styleText}\n${regionalGlassTheme}`}
+      styleText={`${styleText}\n${regionalGlassTheme}\n${monochromeRegionalTheme}\n${regionalIconAndLinkGuardTheme}`}
       bodyHtml={bodyHtml}
-      scriptText={scriptText}
+      scriptText={`${scriptText}\n${regionalIconAndLinkGuardScript}`}
     />
   );
 }

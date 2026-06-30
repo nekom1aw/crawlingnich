@@ -20,7 +20,9 @@
     const isDark = theme === 'dark';
     button.setAttribute('aria-label', isDark ? 'Ubah ke mode light' : 'Ubah ke mode dark');
     button.setAttribute('title', isDark ? 'Mode light' : 'Mode dark');
-    button.innerHTML = `<i class="ti ${isDark ? 'ti-sun' : 'ti-moon'}"></i>`;
+    button.innerHTML = isDark
+      ? '<svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"></path><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>'
+      : '<svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3 6.5 6.5 0 0 0 21 12.8Z"></path></svg>';
   }
 
   setTheme(getInitialTheme());
@@ -57,17 +59,18 @@
 
     setTheme(document.documentElement.dataset.theme || getInitialTheme());
     const themeToggle = document.getElementById('themeToggle');
-    if (themeToggle?.dataset.bound === 'true') return;
-    if (themeToggle) themeToggle.dataset.bound = 'true';
-    themeToggle?.addEventListener('click', () => {
-      const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-      try {
-        localStorage.setItem(THEME_KEY, nextTheme);
-      } catch {
-        // Keep the toggle usable even when storage is blocked.
-      }
-      setTheme(nextTheme);
-    });
+    if (themeToggle && themeToggle.dataset.bound !== 'true') {
+      themeToggle.dataset.bound = 'true';
+      themeToggle.addEventListener('click', () => {
+        const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        try {
+          localStorage.setItem(THEME_KEY, nextTheme);
+        } catch {
+          // Keep the toggle usable even when storage is blocked.
+        }
+        setTheme(nextTheme);
+      });
+    }
 
     target.querySelectorAll('a.nav-link[href^="/"]').forEach((link) => {
       if (link.dataset.smoothNav === 'true') return;
@@ -78,11 +81,7 @@
         const url = new URL(link.href, window.location.origin);
         if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return;
 
-        event.preventDefault();
         document.body.classList.add('is-page-leaving');
-        window.setTimeout(() => {
-          window.location.href = url.pathname + url.search + url.hash;
-        }, 120);
       });
     });
   }
