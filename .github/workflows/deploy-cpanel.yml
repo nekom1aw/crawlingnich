@@ -78,6 +78,26 @@ jobs:
 
             npm install --omit=dev --no-audit --no-fund
 
+            {
+              printf '%s\n' 'NVIDIA_API_KEY=${{ secrets.NVIDIA_API_KEY }}'
+              printf '%s\n' 'NVIDIA_MODEL=${{ secrets.NVIDIA_MODEL }}'
+              printf '%s\n' 'NVIDIA_BASE_URL=${{ secrets.NVIDIA_BASE_URL }}'
+              printf '%s\n' 'AI_GATEWAY_API_KEY=${{ secrets.AI_GATEWAY_API_KEY }}'
+              printf '%s\n' 'AI_GATEWAY_MODEL=${{ secrets.AI_GATEWAY_MODEL }}'
+              printf '%s\n' 'GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}'
+              printf '%s\n' 'GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}'
+              printf '%s\n' 'OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}'
+              printf '%s\n' 'OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}'
+            } > .env.local
+
+            if [ -z "${{ secrets.NVIDIA_MODEL }}" ]; then
+              sed -i 's/^NVIDIA_MODEL=$/NVIDIA_MODEL=z-ai\/glm-5.2/' .env.local
+            fi
+
+            if [ -z "${{ secrets.NVIDIA_BASE_URL }}" ]; then
+              sed -i 's#^NVIDIA_BASE_URL=$#NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1#' .env.local
+            fi
+
             mkdir -p tmp
             touch tmp/restart.txt
           EOF

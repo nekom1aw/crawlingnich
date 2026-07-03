@@ -314,9 +314,12 @@ CPANEL_PORT=22
 CPANEL_USER=username_cpanel
 CPANEL_SSH_KEY=private_key_ssh
 CPANEL_APP_DIR=/home/username_cpanel/path/aplikasi
+NVIDIA_API_KEY=isi_api_key_nvidia
+NVIDIA_MODEL=z-ai/glm-5.2
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
 ```
 
-File `.env` dan `.env.local` tidak ikut diupload dari GitHub. Isi environment production langsung di cPanel atau buat file `.env.local` manual di folder aplikasi server.
+File `.env` dan `.env.local` tidak ikut diupload dari GitHub. Workflow deploy akan membuat `.env.local` di cPanel dari GitHub Secrets. Jika `NVIDIA_API_KEY` belum diisi di Secrets, halaman **Summarized AI** akan jatuh ke mode fallback.
 
 ## Catatan Keamanan
 
