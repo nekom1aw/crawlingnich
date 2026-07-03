@@ -203,6 +203,16 @@ Payload:
 
 Endpoint ini mencari berita dari RSS, lalu membuat ringkasan gabungan. Mode utama memakai **Vercel AI SDK + AI Gateway**. Buat API key di Vercel AI Gateway, lalu set environment variable:
 
+Provider NVIDIA GLM juga didukung lewat endpoint OpenAI-compatible dari NVIDIA Build:
+
+```text
+NVIDIA_API_KEY=isi_api_key_nvidia
+NVIDIA_MODEL=z-ai/glm-5.2
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
+```
+
+Jika `NVIDIA_API_KEY` tersedia, aplikasi akan memakai `z-ai/glm-5.2` terlebih dahulu.
+
 ```text
 AI_GATEWAY_API_KEY=isi_api_key_vercel_ai_gateway
 ```
@@ -212,6 +222,8 @@ Untuk lokal, bisa taruh di `.env.local`:
 ```text
 AI_GATEWAY_API_KEY=isi_api_key_vercel_ai_gateway
 AI_GATEWAY_MODEL=anthropic/claude-haiku-4.5
+NVIDIA_API_KEY=isi_api_key_nvidia
+NVIDIA_MODEL=z-ai/glm-5.2
 ```
 
 Opsional:
@@ -243,7 +255,7 @@ OPENAI_MODEL=gpt-4.1-mini
 Urutan provider:
 
 ```text
-Vercel AI Gateway -> Direct Gemini SDK -> OpenAI -> direct Gemini REST -> fallback judul berita
+NVIDIA GLM -> Vercel AI Gateway -> Direct Gemini SDK -> OpenAI -> direct Gemini REST -> fallback judul berita
 ```
 
 Jika semua API/model belum tersedia, aplikasi tetap menampilkan ringkasan fallback dari judul berita yang ditemukan.

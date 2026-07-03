@@ -1,8 +1,497 @@
 import LegacyPage from '../_components/LegacyPage';
 
-const styleText = "*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }\n  :root {\n    --bg: #0d0f14;\n    --bg2: #13161d;\n    --bg3: #1a1e28;\n    --border: rgba(255,255,255,0.07);\n    --border2: rgba(255,255,255,0.13);\n    --text: #f0f2f8;\n    --text2: #8b90a0;\n    --text3: #555c6e;\n    --green: #9dffc1;\n    --font-head: 'Syne', sans-serif;\n    --font-body: 'Inter', sans-serif;\n    --font-mono: 'DM Mono', monospace;\n  }\n  body { min-height: 100vh; background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 14px; overflow: hidden; }\n  .shell { height: calc(100vh - 64px - 34px); display: grid; grid-template-rows: 1fr; }\n  .page { min-height: 0; display: grid; grid-template-columns: minmax(360px, 520px) minmax(0, 1fr); overflow: hidden; }\n  .composer { min-width: 0; background: var(--bg2); border-right: 1px solid var(--border); padding: 22px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }\n  .section-label { color: var(--text3); font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }\n  .prompt-box { border: 1px solid var(--border2); background: rgba(255,255,255,0.035); }\n  .prompt-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 14px; border-bottom: 1px solid var(--border); }\n  .prompt-title { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-head); font-weight: 800; font-size: 18px; }\n  .prompt-status { color: var(--text3); font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; }\n  textarea { width: 100%; min-height: 170px; resize: vertical; padding: 14px; background: var(--bg3); border: 0; border-bottom: 1px solid var(--border); color: var(--text); outline: none; font-family: var(--font-body); font-size: 14px; line-height: 1.65; }\n  textarea::placeholder { color: var(--text3); }\n  .controls { display: flex; gap: 10px; padding: 12px 14px; }\n  .btn { height: 40px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #fff; background: #fff; color: #000; font-family: var(--font-head); font-weight: 700; cursor: pointer; }\n  .btn.secondary { background: transparent; color: var(--text2); border-color: var(--border2); }\n  .btn:disabled { opacity: 0.65; cursor: wait; }\n  .hint { color: var(--text2); font-size: 12px; line-height: 1.7; border: 1px solid var(--border); padding: 13px; background: rgba(0,0,0,0.18); }\n  .hint code { color: #fff; font-family: var(--font-mono); }\n  .results-area { min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }\n  .summary-panel { border-bottom: 1px solid var(--border); background: #10131a; padding: 18px 22px; flex-shrink: 0; }\n  .summary-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }\n  .summary-title { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }\n  .summary-meta { color: var(--text3); font-family: var(--font-mono); font-size: 10px; }\n  .summary-text { white-space: pre-wrap; color: var(--text); background: rgba(0,0,0,0.24); border: 1px solid var(--border2); padding: 14px; line-height: 1.7; min-height: 150px; max-height: min(46vh, 430px); overflow-y: auto; overscroll-behavior: contain; }\n  .articles { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; }\n  .article-card { display: flex; gap: 13px; padding: 15px; background: var(--bg2); border: 1px solid var(--border); }\n  .article-icon { width: 38px; height: 38px; display: grid; place-items: center; flex-shrink: 0; border: 1px solid var(--border2); color: #fff; }\n  .article-body { min-width: 0; flex: 1; }\n  .article-meta { display: flex; flex-wrap: wrap; gap: 8px; color: var(--text3); font-family: var(--font-mono); font-size: 11px; margin-bottom: 7px; }\n  .article-title { color: var(--text); font-size: 14px; line-height: 1.45; margin-bottom: 10px; }\n  .article-open { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; background: #fff; color: #000; text-decoration: none; font-family: var(--font-mono); font-size: 11px; }\n  .empty { flex: 1; display: grid; place-items: center; color: var(--text3); text-align: center; line-height: 1.7; }\n  @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }\n  @media (max-width: 980px) {\n    body { overflow: auto; }\n    .shell { min-height: 100vh; height: auto; }\n    .page { grid-template-columns: 1fr; overflow: visible; }\n    .results-area { min-height: 70vh; }\n    .summary-text { max-height: 55vh; }\n  }";
-const bodyHtml = "<div class=\"shell\">\n  <main class=\"page\">\n    <aside class=\"composer\">\n      <div class=\"section-label\">AI News Assistant</div>\n      <section class=\"prompt-box\">\n        <div class=\"prompt-head\">\n          <div class=\"prompt-title\"><i class=\"ti ti-sparkles\"></i> Summarized AI</div>\n          <div class=\"prompt-status\" id=\"aiStatus\">ready</div>\n        </div>\n        <textarea id=\"aiPrompt\" placeholder=\"Contoh: carikan berita terbaru tentang konflik orangutan dan perdagangan satwa di Kalimantan, lalu ringkas poin pentingnya.\"></textarea>\n        <div class=\"controls\">\n          <button class=\"btn\" id=\"summarizeBtn\" type=\"button\"><i class=\"ti ti-message-search\"></i> Cari & Ringkas</button>\n          <button class=\"btn secondary\" id=\"clearBtn\" type=\"button\"><i class=\"ti ti-refresh\"></i> Clear</button>\n        </div>\n      </section>\n      <div class=\"hint\">\n        Ketik seperti chat. Sistem mencari berita dari RSS Google/Bing, lalu membuat ringkasan memakai Vercel AI SDK + Gemini jika <code>GEMINI_API_KEY</code> tersedia. Kalau key belum ada, aplikasi mencoba mode lain dan tetap membuat ringkasan gratis berbasis judul berita.\n      </div>\n    </aside>\n\n    <section class=\"results-area\">\n      <div class=\"summary-panel\">\n        <div class=\"summary-head\">\n          <div class=\"summary-title\"><i class=\"ti ti-file-analytics\"></i> Ringkasan</div>\n          <div class=\"summary-meta\" id=\"summaryMeta\">belum ada pencarian</div>\n        </div>\n        <div class=\"summary-text\" id=\"summaryText\">Masukkan permintaan berita di kiri, lalu klik Cari & Ringkas.</div>\n      </div>\n      <div class=\"articles\" id=\"articlesList\">\n        <div class=\"empty\"><div><i class=\"ti ti-news\" style=\"font-size:48px\"></i><p>Daftar berita sumber akan muncul di sini.</p></div></div>\n      </div>\n    </section>\n  </main>\n</div>";
-const scriptText = "let ARTICLES = [];\n\nfunction escapeHtml(value = '') {\n  return String(value)\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;');\n}\n\nfunction safeLink(link) {\n  try {\n    const url = new URL(String(link || '').trim());\n    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';\n  } catch {\n    return '';\n  }\n}\n\nfunction formatDateID(dateStr) {\n  if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return 'Tanggal tidak tersedia';\n  const d = new Date(dateStr);\n  if (Number.isNaN(d.getTime()) || d.getFullYear() <= 1970) return 'Tanggal tidak tersedia';\n  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });\n}\n\nfunction renderArticles() {\n  const list = document.getElementById('articlesList');\n  if (!ARTICLES.length) {\n    list.innerHTML = '<div class=\"empty\"><div><i class=\"ti ti-news\" style=\"font-size:48px\"></i><p>Daftar berita sumber akan muncul di sini.</p></div></div>';\n    return;\n  }\n\n  list.innerHTML = ARTICLES.map((item) => {\n    const link = safeLink(item.link);\n    return `\n      <article class=\"article-card\">\n        <div class=\"article-icon\"><i class=\"ti ti-news\"></i></div>\n        <div class=\"article-body\">\n          <div class=\"article-meta\">\n            <span>${escapeHtml(item.source || 'Unknown')}</span>\n            <span>${formatDateID(item.date)}</span>\n          </div>\n          <h3 class=\"article-title\">${escapeHtml(item.title || '-')}</h3>\n          <a class=\"article-open\" href=\"${escapeHtml(link || '#')}\" target=\"_blank\" rel=\"noopener noreferrer\"><i class=\"ti ti-external-link\"></i> Buka berita</a>\n        </div>\n      </article>\n    `;\n  }).join('');\n}\n\nasync function runSummary() {\n  const query = document.getElementById('aiPrompt').value.trim();\n  if (!query) {\n    alert('Tulis dulu berita apa yang mau dicari.');\n    return;\n  }\n\n  const btn = document.getElementById('summarizeBtn');\n  const status = document.getElementById('aiStatus');\n  btn.disabled = true;\n  btn.innerHTML = '<i class=\"ti ti-loader-2\" style=\"font-size:16px;animation:spin 1s linear infinite\"></i> Memproses...';\n  status.textContent = 'searching';\n  document.getElementById('summaryText').textContent = 'Mencari berita dan membuat ringkasan...';\n  document.getElementById('summaryMeta').textContent = 'sedang diproses';\n  ARTICLES = [];\n  renderArticles();\n\n  try {\n    const response = await fetch('/api/ai-news-summary', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({ query }),\n    });\n    const data = await response.json();\n    if (!response.ok) throw new Error(data.detail || data.error || 'Gagal membuat ringkasan');\n\n    ARTICLES = Array.isArray(data.results) ? data.results : [];\n    document.getElementById('summaryText').textContent = data.summary || 'Ringkasan tidak tersedia.';\n    const provider = data.provider || (data.aiEnabled ? 'ai' : 'fallback');\n    document.getElementById('summaryMeta').textContent = `${ARTICLES.length} berita | ${provider}`;\n    status.textContent = provider;\n    renderArticles();\n  } catch (err) {\n    document.getElementById('summaryText').textContent = err.message;\n    document.getElementById('summaryMeta').textContent = 'gagal';\n    status.textContent = 'error';\n  } finally {\n    btn.disabled = false;\n    btn.innerHTML = '<i class=\"ti ti-message-search\"></i> Cari & Ringkas';\n  }\n}\n\ndocument.getElementById('summarizeBtn').addEventListener('click', runSummary);\ndocument.getElementById('clearBtn').addEventListener('click', () => {\n  document.getElementById('aiPrompt').value = '';\n  document.getElementById('summaryText').textContent = 'Masukkan permintaan berita di kiri, lalu klik Cari & Ringkas.';\n  document.getElementById('summaryMeta').textContent = 'belum ada pencarian';\n  document.getElementById('aiStatus').textContent = 'ready';\n  ARTICLES = [];\n  renderArticles();\n});\ndocument.getElementById('aiPrompt').addEventListener('keydown', (e) => {\n  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') runSummary();\n});";
+const styleText = `
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-radius: 0 !important; }
+:root {
+  --bg: #f7f7f7;
+  --panel: #ffffff;
+  --panel2: #f1f1f1;
+  --border: #d8d8d8;
+  --border2: #bdbdbd;
+  --text: #101010;
+  --text2: #555;
+  --text3: #8a8a8a;
+  --inverse: #0f0f0f;
+  --inverse-text: #fff;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+html[data-theme="dark"] {
+  --bg: #080808;
+  --panel: #101010;
+  --panel2: #171717;
+  --border: #292929;
+  --border2: #3a3a3a;
+  --text: #f5f5f5;
+  --text2: #b7b7b7;
+  --text3: #747474;
+  --inverse: #fff;
+  --inverse-text: #000;
+}
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  overflow: hidden;
+}
+.shell {
+  height: calc(100vh - 64px - 34px);
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  background: var(--bg);
+}
+.chat-area {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  border-right: 1px solid var(--border);
+}
+.chat-head {
+  min-height: 74px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+.head-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.head-title strong {
+  font-family: var(--font-head);
+  font-size: 22px;
+  line-height: 1.1;
+}
+.head-title span,
+.chat-status,
+.source-meta,
+.message-meta {
+  color: var(--text3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.chat-status {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+  text-transform: uppercase;
+}
+.messages {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.message {
+  max-width: min(780px, 92%);
+  display: grid;
+  gap: 7px;
+}
+.message.user {
+  align-self: flex-end;
+}
+.message.assistant {
+  align-self: flex-start;
+}
+.message-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-transform: uppercase;
+}
+.bubble {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  padding: 14px 15px;
+  line-height: 1.72;
+  white-space: pre-wrap;
+}
+.message.user .bubble {
+  background: var(--inverse);
+  color: var(--inverse-text);
+  border-color: var(--inverse);
+}
+.message.loading .bubble {
+  color: var(--text2);
+}
+.composer {
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  padding: 14px 18px;
+}
+.composer-box {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: end;
+  gap: 10px;
+}
+textarea {
+  width: 100%;
+  min-height: 48px;
+  max-height: 160px;
+  resize: vertical;
+  padding: 13px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  outline: none;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.55;
+}
+textarea::placeholder {
+  color: var(--text3);
+}
+.btn {
+  height: 48px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--inverse);
+  background: var(--inverse);
+  color: var(--inverse-text);
+  font-family: var(--font-head);
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn.secondary {
+  background: transparent;
+  color: var(--text2);
+  border-color: var(--border2);
+}
+.btn:hover:not(:disabled) {
+  opacity: 0.86;
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.composer-hint {
+  margin-top: 9px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.sources-panel {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: var(--panel);
+}
+.sources-head {
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sources-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-head);
+  font-size: 16px;
+  font-weight: 800;
+}
+.sources-list {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.source-card {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  padding: 13px;
+  display: grid;
+  gap: 8px;
+}
+.source-title {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+.source-open {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  background: var(--inverse);
+  color: var(--inverse-text);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.empty {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  color: var(--text3);
+  text-align: center;
+  line-height: 1.7;
+}
+.empty i {
+  display: block;
+  font-size: 42px;
+  margin-bottom: 10px;
+}
+@keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@media (max-width: 1040px) {
+  body { overflow: auto; }
+  .shell {
+    height: auto;
+    min-height: calc(100vh - 64px - 34px);
+    grid-template-columns: 1fr;
+  }
+  .chat-area {
+    min-height: 70vh;
+    border-right: 0;
+  }
+  .sources-panel {
+    min-height: 360px;
+    border-top: 1px solid var(--border);
+  }
+}
+@media (max-width: 680px) {
+  .chat-head {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 16px;
+  }
+  .messages {
+    padding: 16px;
+  }
+  .message {
+    max-width: 100%;
+  }
+  .composer-box {
+    grid-template-columns: 1fr;
+  }
+  .btn {
+    width: 100%;
+  }
+}
+`;
+
+const bodyHtml = `
+<div class="shell">
+  <main class="chat-area">
+    <header class="chat-head">
+      <div class="head-title">
+        <strong>Summarized AI</strong>
+        <span>chatbot pencarian dan ringkasan berita</span>
+      </div>
+      <div class="chat-status" id="aiStatus">ready</div>
+    </header>
+
+    <section class="messages" id="messagesList" aria-label="Percakapan AI"></section>
+
+    <section class="composer" aria-label="Kirim pertanyaan">
+      <div class="composer-box">
+        <textarea id="aiPrompt" rows="2" placeholder="Tanya berita apa saja, contoh: ringkas konflik orangutan dan perdagangan satwa terbaru."></textarea>
+        <button class="btn" id="sendBtn" type="button"><i class="ti ti-send"></i> Kirim</button>
+        <button class="btn secondary" id="clearBtn" type="button"><i class="ti ti-refresh"></i> Reset</button>
+      </div>
+      <div class="composer-hint">Enter untuk kirim. Shift + Enter untuk baris baru.</div>
+    </section>
+  </main>
+
+  <aside class="sources-panel">
+    <div class="sources-head">
+      <div class="sources-title"><i class="ti ti-news"></i> Sumber Berita</div>
+      <div class="source-meta" id="sourcesMeta">0 sumber</div>
+    </div>
+    <div class="sources-list" id="sourcesList"></div>
+  </aside>
+</div>
+`;
+
+const scriptText = `
+let CHAT = [];
+let CURRENT_SOURCES = [];
+let isLoading = false;
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function safeLink(link) {
+  try {
+    const url = new URL(String(link || '').trim());
+    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+function formatDateID(dateStr) {
+  if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return 'Tanggal tidak tersedia';
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime()) || d.getFullYear() <= 1970) return 'Tanggal tidak tersedia';
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function scrollMessagesToBottom() {
+  const list = document.getElementById('messagesList');
+  requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
+}
+
+function renderMessages() {
+  const list = document.getElementById('messagesList');
+  if (!CHAT.length) {
+    list.innerHTML = '<div class="empty"><div><i class="ti ti-message-circle"></i><p>Mulai percakapan dengan bertanya berita yang ingin dicari dan diringkas.</p></div></div>';
+    return;
+  }
+
+  list.innerHTML = CHAT.map((msg) => {
+    const loading = msg.loading ? ' loading' : '';
+    return \`
+      <article class="message \${msg.role}\${loading}">
+        <div class="message-meta">
+          <span>\${msg.role === 'user' ? 'Anda' : 'AI'}</span>
+          \${msg.meta ? \`<span>\${escapeHtml(msg.meta)}</span>\` : ''}
+        </div>
+        <div class="bubble">\${escapeHtml(msg.content || '')}</div>
+      </article>
+    \`;
+  }).join('');
+  scrollMessagesToBottom();
+}
+
+function renderSources() {
+  const list = document.getElementById('sourcesList');
+  document.getElementById('sourcesMeta').textContent = CURRENT_SOURCES.length + ' sumber';
+
+  if (!CURRENT_SOURCES.length) {
+    list.innerHTML = '<div class="empty"><div><i class="ti ti-news-off"></i><p>Sumber berita dari jawaban terakhir akan muncul di sini.</p></div></div>';
+    return;
+  }
+
+  list.innerHTML = CURRENT_SOURCES.map((item) => {
+    const link = safeLink(item.link);
+    return \`
+      <article class="source-card">
+        <div class="source-meta">
+          <span>\${escapeHtml(item.source || 'Unknown')}</span>
+          <span>\${formatDateID(item.date)}</span>
+        </div>
+        <div class="source-title">\${escapeHtml(item.title || '-')}</div>
+        <a class="source-open" href="\${escapeHtml(link || '#')}" target="_blank" rel="noopener noreferrer">
+          <i class="ti ti-external-link"></i> Buka berita
+        </a>
+      </article>
+    \`;
+  }).join('');
+}
+
+function setLoadingState(running) {
+  isLoading = running;
+  const btn = document.getElementById('sendBtn');
+  const status = document.getElementById('aiStatus');
+  btn.disabled = running;
+  btn.innerHTML = running
+    ? '<i class="ti ti-loader-2" style="font-size:16px;animation:spin 1s linear infinite"></i> Memproses'
+    : '<i class="ti ti-send"></i> Kirim';
+  status.textContent = running ? 'thinking' : 'ready';
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+
+  const input = document.getElementById('aiPrompt');
+  const query = input.value.trim();
+  if (!query) return;
+
+  input.value = '';
+  CHAT.push({ role: 'user', content: query });
+  const loadingId = Date.now();
+  CHAT.push({ role: 'assistant', content: 'Mencari berita dan menyusun ringkasan...', loading: true, id: loadingId });
+  renderMessages();
+  setLoadingState(true);
+
+  try {
+    const response = await fetch('/api/ai-news-summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || data.error || 'Gagal membuat ringkasan');
+
+    const provider = data.provider || (data.aiEnabled ? 'ai' : 'fallback');
+    CURRENT_SOURCES = Array.isArray(data.results) ? data.results : [];
+    const idx = CHAT.findIndex((msg) => msg.id === loadingId);
+    if (idx >= 0) {
+      CHAT[idx] = {
+        role: 'assistant',
+        content: data.summary || 'Ringkasan tidak tersedia.',
+        meta: \`\${CURRENT_SOURCES.length} berita | \${provider}\`,
+      };
+    }
+    document.getElementById('aiStatus').textContent = provider;
+    renderSources();
+  } catch (err) {
+    const idx = CHAT.findIndex((msg) => msg.id === loadingId);
+    if (idx >= 0) {
+      CHAT[idx] = {
+        role: 'assistant',
+        content: err.message || 'Gagal membuat ringkasan.',
+        meta: 'error',
+      };
+    }
+    document.getElementById('aiStatus').textContent = 'error';
+  } finally {
+    setLoadingState(false);
+    renderMessages();
+  }
+}
+
+function resetChat() {
+  CHAT = [];
+  CURRENT_SOURCES = [];
+  document.getElementById('aiPrompt').value = '';
+  document.getElementById('aiStatus').textContent = 'ready';
+  renderMessages();
+  renderSources();
+}
+
+document.getElementById('sendBtn').addEventListener('click', sendMessage);
+document.getElementById('clearBtn').addEventListener('click', resetChat);
+document.getElementById('aiPrompt').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+renderMessages();
+renderSources();
+`;
 
 export default function SummarizedAiPage() {
   return (
