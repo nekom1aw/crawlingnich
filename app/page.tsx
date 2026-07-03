@@ -74,8 +74,8 @@ body::after {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-rows: 64px 1fr;
-  height: calc(100vh - 28px);
+  grid-template-rows: 1fr;
+  height: calc(100vh - 64px - 34px - 28px);
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.68);
   border-radius: 28px;
@@ -984,7 +984,7 @@ html[data-theme="dark"] .numInput.cur-year {
 
 @media (max-width: 1024px) {
   body { padding: 10px; }
-  .shell { height: calc(100vh - 20px); border-radius: 24px; }
+  .shell { height: calc(100vh - 64px - 34px - 20px); border-radius: 24px; }
   .main { grid-template-columns: 1fr; }
   .main.is-sidebar-collapsed { grid-template-columns: 1fr; }
   .main.is-preview-collapsed,
@@ -1008,7 +1008,7 @@ html[data-theme="dark"] .numInput.cur-year {
 }
 
 @media (max-width: 720px) {
-  .shell { grid-template-rows: 58px 1fr; border-radius: 20px; }
+  .shell { grid-template-rows: 1fr; border-radius: 20px; }
   .app-nav { justify-content: space-between; padding: 0 12px; gap: 10px; height: 58px; }
   .nav-left { gap: 14px; }
   .nav-logo { font-size: 14px; }
@@ -1356,7 +1356,7 @@ html[data-theme="dark"] .result-card:hover {
 
 @media (max-width: 1024px) {
   body { padding: 0; }
-  .shell { height: 100vh; }
+  .shell { height: calc(100vh - 64px - 34px); }
   .sidebar-handle { border-radius: 0; }
 }
 
@@ -1367,22 +1367,6 @@ html[data-theme="dark"] .result-card:hover {
 `;
 const bodyContent = (
   <div className="shell">
-    <div id="appHeader">
-      <nav className="app-nav">
-        <div className="nav-left">
-          <div className="nav-logo"><div className="logo-dot" />Crawling Beta test</div>
-          <div className="nav-menu">
-            <a className="nav-link active" href="/"><i className="ti ti-radar" /><span>Crawling</span></a>
-            <a className="nav-link" href="/isu-daerah"><i className="ti ti-map-pin" /><span>Isu Daerah</span></a>
-          </div>
-        </div>
-        <div className="nav-right">
-          <div className="badge-live"><div className="dot-pulse" />ENGINE READY</div>
-          <button className="theme-toggle" id="themeToggle" type="button" aria-label="Ubah mode tampilan" />
-        </div>
-      </nav>
-    </div>
-
     <div className="main is-preview-collapsed">
       <button className="sidebar-handle" id="sidebarHandle" type="button" aria-label="Buka tutup panel kiri">
         <i className="ti ti-chevron-left" />
@@ -1510,7 +1494,7 @@ const bodyContent = (
     </div>
   </div>
 );
-const scriptText = "let DATA = [];\nlet activeType = 'all';\nlet currentPage = 1;\nlet isLoading = false;\nlet rangePicker = null;\nlet selectedPreviewIndex = null;\nlet activeCrawlController = null;\nconst resolvedLinkCache = new Map();\nconst PER_PAGE = 10;\nconst READ_LINKS_KEY = 'crawling-read-links';\nconst MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];\n\nfunction getTags(listId) {\n  return [...document.querySelectorAll(`#${listId} .tag`)].map(t => t.dataset.value).filter(Boolean);\n}\n\nfunction parseDateInput(inputId, endOfDay = false) {\n  const value = document.getElementById(inputId).value;\n  if (!value) return null;\n  const [year, month, day] = value.split('-').map(Number);\n  if (!year || !month || !day) return null;\n  return endOfDay ? new Date(year, month - 1, day, 23, 59, 59, 999) : new Date(year, month - 1, day, 0, 0, 0, 0);\n}\n\nfunction getFiltered() {\n  const q = document.getElementById('searchInResults').value.toLowerCase();\n  const fromDate = parseDateInput('fromDate');\n  const toDate = parseDateInput('toDate', true);\n\n  return prioritizeClientResults(DATA.filter(d => {\n    const matchType = activeType === 'all' || d.type === activeType;\n    const matchQ = !q || (d.title || '').toLowerCase().includes(q);\n\n    const itemDate = d.date ? new Date(d.date) : null;\n    const validDate = itemDate && !Number.isNaN(itemDate.getTime());\n\n    if (fromDate || toDate) {\n      if (!validDate) return matchType && matchQ;\n      if (fromDate && itemDate < fromDate) return false;\n      if (toDate && itemDate > toDate) return false;\n    }\n\n    return matchType && matchQ;\n  }));\n}\n\nfunction formatDateID(dateStr) {\n  if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return 'Tanggal tidak tersedia';\n  const d = new Date(dateStr);\n  if (Number.isNaN(d.getTime()) || d.getFullYear() <= 1970) return 'Tanggal tidak tersedia';\n  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });\n}\n\nfunction isFeaturedResult(item = {}) {\n  return Boolean(item.isFeatured || /betahita/i.test(`${item.source || ''} ${item.link || ''}`));\n}\n\nfunction resultTime(item = {}) {\n  if (!item.date) return 0;\n  const time = new Date(item.date).getTime();\n  return Number.isNaN(time) ? 0 : time;\n}\n\nfunction prioritizeClientResults(items = []) {\n  return items\n    .map((item, index) => ({ item, index }))\n    .sort((a, b) => {\n      const aFeatured = isFeaturedResult(a.item);\n      const bFeatured = isFeaturedResult(b.item);\n      if (aFeatured !== bFeatured) return aFeatured ? -1 : 1;\n\n      const dateDiff = resultTime(b.item) - resultTime(a.item);\n      if (dateDiff) return dateDiff;\n\n      return a.index - b.index;\n    })\n    .map(entry => entry.item);\n}\n\nfunction escapeHtml(value = '') {\n  return String(value)\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;');\n}\n\nfunction safeLink(link) {\n  try {\n    const url = new URL(String(link || '').trim());\n    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';\n  } catch {\n    return '';\n  }\n}\n\nfunction getItemLink(item = {}) {\n  return safeLink(item.resolvedLink || item.finalUrl || item.link);\n}\n\nfunction isGoogleNewsLink(link = '') {\n  try {\n    return /(^|\\.)news\\.google\\.com$/i.test(new URL(link).hostname);\n  } catch {\n    return false;\n  }\n}\n\nasync function resolveSourceLink(item = {}, index = null) {\n  const currentLink = getItemLink(item);\n  if (!currentLink || !isGoogleNewsLink(currentLink)) return currentLink;\n  if (resolvedLinkCache.has(currentLink)) return resolvedLinkCache.get(currentLink);\n\n  const response = await fetch('/api/resolve-url', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      url: currentLink,\n      title: item.title || '',\n      source: item.source || '',\n    }),\n  });\n  const data = await response.json().catch(() => ({}));\n  if (!response.ok) throw new Error(data.error || 'Gagal membuka sumber asli');\n\n  const finalLink = safeLink(data.finalUrl);\n  if (!finalLink) throw new Error('URL sumber asli tidak valid');\n  resolvedLinkCache.set(currentLink, finalLink);\n  item.resolvedLink = finalLink;\n  if (Number.isInteger(index) && DATA[index]) DATA[index].resolvedLink = finalLink;\n  return finalLink;\n}\n\nfunction getPreviewUrl(link) {\n  return link ? `/api/preview?url=${encodeURIComponent(link)}` : 'about:blank';\n}\n\nfunction getReadLinks() {\n  try {\n    const links = JSON.parse(localStorage.getItem(READ_LINKS_KEY) || '[]');\n    return Array.isArray(links) ? links : [];\n  } catch {\n    return [];\n  }\n}\n\nfunction hasReadLink(link) {\n  return getReadLinks().includes(link);\n}\n\nfunction markReadLink(link) {\n  if (!link) return;\n  const links = new Set(getReadLinks());\n  links.add(link);\n  localStorage.setItem(READ_LINKS_KEY, JSON.stringify([...links].slice(-500)));\n}\n\n\nfunction cleanCsvValue(value = '') {\n  return String(value || '').replace(/\\s+/g, ' ').trim();\n}\n\nfunction csvCell(value = '') {\n  const text = cleanCsvValue(value);\n  return '\"' + text.replace(/\"/g, '\"\"') + '\"';\n}\n\nfunction firstSentence(text = '') {\n  return cleanCsvValue(text).split(/(?<=[.!?])\\s+/)[0] || '';\n}\n\nfunction sentenceWith(text = '', patterns = []) {\n  const sentences = cleanCsvValue(text).split(/(?<=[.!?])\\s+|\\s+-\\s+|\\s+\\|\\s+/).filter(Boolean);\n  return sentences.find(sentence => patterns.some(pattern => pattern.test(sentence))) || '';\n}\n\nfunction detectWhere(item = {}) {\n  if (item.region) return item.region;\n  const text = cleanCsvValue((item.title || '') + ' ' + (item.snippet || ''));\n  const match = text.match(/\\b(?:di|dari|ke)\\s+([A-Z][A-Za-zÀ-ÿ.'-]*(?:\\s+[A-Z][A-Za-zÀ-ÿ.'-]*){0,4})/);\n  return match ? match[1] : '';\n}\n\nfunction detectWho(item = {}) {\n  const text = cleanCsvValue(item.title || item.snippet || '');\n  const match = text.match(/\\b([A-Z][A-Za-zÀ-ÿ.'-]*(?:\\s+[A-Z][A-Za-zÀ-ÿ.'-]*){1,4})\\b/);\n  if (match) return match[1];\n  return item.source || '';\n}\n\nfunction buildFiveWOneH(item = {}) {\n  const title = cleanCsvValue(item.title || '-');\n  const snippet = cleanCsvValue(item.snippet || '');\n  const context = title + '. ' + snippet;\n  const why = sentenceWith(context, [/\\bkarena\\b/i, /\\bakibat\\b/i, /\\bsebab\\b/i, /\\bdampak\\b/i, /\\btujuan\\b/i, /\\bterkait\\b/i, /\\bdipicu\\b/i]);\n  const how = sentenceWith(context, [/\\bdengan\\b/i, /\\bmelalui\\b/i, /\\bcara\\b/i, /\\bupaya\\b/i, /\\bproses\\b/i, /\\bmodus\\b/i, /\\bkronologi\\b/i]);\n\n  return {\n    apa: title,\n    siapa: detectWho(item),\n    kapan: formatDateID(item.date),\n    diMana: detectWhere(item),\n    mengapa: why,\n    bagaimana: how || firstSentence(snippet),\n  };\n}\n\nfunction setExportState(running, text = '') {\n  const btn = document.getElementById('exportCsvBtn');\n  if (!btn) return;\n  btn.disabled = running || !getFiltered().length;\n  btn.innerHTML = running\n    ? '<i class=\"ti ti-loader-2\" style=\"font-size:16px;animation:spin 1s linear infinite\"></i> ' + (text || 'Membaca artikel...')\n    : '<i class=\"ti ti-download\"></i> Download CSV 5W+1H';\n}\n\nasync function fetchArticleFiveWOneH(rows = []) {\n  const response = await fetch('/api/article-5w1h', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      items: rows.map((item) => ({\n        title: item.title || '',\n        source: item.source || '',\n        date: item.date || '',\n        link: getItemLink(item),\n        snippet: item.snippet || '',\n        matchedKeywords: item.matchedKeywords || '',\n        region: item.region || '',\n        issue: item.issue || '',\n        type: item.type || '',\n      })),\n    }),\n  });\n  const data = await response.json().catch(() => ({}));\n  if (!response.ok) throw new Error(data.error || 'Gagal membaca isi artikel');\n  const byIndex = new Map();\n  (Array.isArray(data.results) ? data.results : []).forEach((entry) => {\n    byIndex.set(entry.index, entry);\n  });\n  return byIndex;\n}\n\nasync function downloadCsv5w1h() {\n  const rows = getFiltered();\n  if (!rows.length) {\n    alert('Belum ada hasil untuk di-download.');\n    return;\n  }\n\n  setExportState(true, 'Membaca artikel...');\n\n  try {\n    const enrichedByIndex = await fetchArticleFiveWOneH(rows);\n    setExportState(true, 'Membuat CSV...');\n\n    const headers = [\n      'No', 'Tipe', 'Judul', 'Sumber', 'Tanggal', 'Link', 'Final URL', 'Keyword',\n      'Apa (detail)', 'Siapa (detail)', 'Kapan (detail)', 'Di mana (detail)', 'Mengapa (detail)', 'Bagaimana (detail)',\n      'Ringkasan Artikel', 'Artikel Terbaca', 'Jumlah Paragraf', 'Catatan Ekstraksi', 'Snippet Crawl'\n    ];\n    const lines = [headers.map(csvCell).join(',')];\n\n    rows.forEach((item, index) => {\n      const enriched = enrichedByIndex.get(index) || {};\n      const fiveWOneH = enriched.fiveWOneH || buildFiveWOneH(item);\n      lines.push([\n        index + 1,\n        getTypeMeta(item.type).label,\n        item.title || '',\n        item.source || '',\n        formatDateID(item.date),\n        getItemLink(item),\n        enriched.finalUrl || getItemLink(item),\n        item.region ? 'Daerah: ' + item.region + (item.issue ? ' | Isu: ' + item.issue : '') : (item.matchedKeywords || ''),\n        fiveWOneH.apa,\n        fiveWOneH.siapa,\n        fiveWOneH.kapan,\n        fiveWOneH.diMana,\n        fiveWOneH.mengapa,\n        fiveWOneH.bagaimana,\n        fiveWOneH.ringkasanArtikel || '',\n        fiveWOneH.artikelTerbaca ? 'Ya' : 'Tidak',\n        fiveWOneH.jumlahParagraf || 0,\n        enriched.error || '',\n        item.snippet || '',\n      ].map(csvCell).join(','));\n    });\n\n    const blob = new Blob(['\\ufeff' + lines.join('\\n')], { type: 'text/csv;charset=utf-8;' });\n    const url = URL.createObjectURL(blob);\n    const link = document.createElement('a');\n    const stamp = new Date().toISOString().slice(0, 10);\n    link.href = url;\n    link.download = 'hasil-crawling-5w1h-artikel-' + stamp + '.csv';\n    document.body.appendChild(link);\n    link.click();\n    link.remove();\n    URL.revokeObjectURL(url);\n  } catch (err) {\n    alert('Gagal membuat CSV 5W+1H dari isi artikel: ' + err.message);\n  } finally {\n    setExportState(false);\n  }\n}\nfunction updateCounters(filtered) {\n  const news = filtered.filter(x => x.type === 'news').length;\n  const journal = filtered.filter(x => x.type === 'journal').length;\n  const regional = filtered.filter(x => x.type === 'regional').length;\n  document.getElementById('cnt-all').textContent = filtered.length;\n  document.getElementById('cnt-berita').textContent = news;\n  document.getElementById('cnt-jurnal').textContent = journal;\n  document.getElementById('cnt-regional').textContent = regional;\n  document.getElementById('totalCount').textContent = filtered.length;\n  document.getElementById('newsCount').textContent = news;\n  document.getElementById('journalCount').textContent = journal;\n  document.getElementById('regionalCount').textContent = regional;\n  const exportBtn = document.getElementById('exportCsvBtn');\n  if (exportBtn) exportBtn.disabled = !filtered.length;\n}\n\nfunction getTypeMeta(type) {\n  if (type === 'journal') return { icon: 'ti-book', iconClass: 'icon-journal', badgeClass: 'badge-journal', label: 'JURNAL' };\n  if (type === 'regional') return { icon: 'ti-map-pin', iconClass: 'icon-regional', badgeClass: 'badge-regional', label: 'ISU' };\n  return { icon: 'ti-news', iconClass: 'icon-news', badgeClass: 'badge-news', label: 'BERITA' };\n}\n\nfunction renderSkeletons(count = 5) {\n  const list = document.getElementById('resultsList');\n  const pg = document.getElementById('pagination');\n  list.innerHTML = Array.from({ length: count }, () => `\n    <div class=\"result-card skeleton-card\">\n      <div class=\"skeleton-icon\"></div>\n      <div class=\"card-body\">\n        <div class=\"skeleton-meta\">\n          <div class=\"skeleton-pill\"></div>\n          <div class=\"skeleton-line skeleton-source\"></div>\n          <div class=\"skeleton-line skeleton-date\"></div>\n        </div>\n        <div class=\"skeleton-line lg\"></div>\n        <div class=\"skeleton-line md\"></div>\n        <div class=\"skeleton-line sm\"></div>\n        <div class=\"skeleton-footer\">\n          <div class=\"skeleton-button\"></div>\n        </div>\n      </div>\n    </div>\n  `).join('');\n  pg.innerHTML = '';\n}\n\nfunction renderResults() {\n  if (isLoading) {\n    renderSkeletons();\n    return;\n  }\n\n  const filtered = getFiltered();\n  updateCounters(filtered);\n\n  const list = document.getElementById('resultsList');\n  const total = filtered.length;\n  const pages = Math.max(1, Math.ceil(total / PER_PAGE));\n  currentPage = Math.min(currentPage, pages);\n  const start = (currentPage - 1) * PER_PAGE;\n  const slice = filtered.slice(start, start + PER_PAGE);\n\n  if (!slice.length) {\n    list.innerHTML = `<div class=\"empty\"><i class=\"ti ti-mood-empty\"></i><p>Tidak ada hasil ditemukan</p></div>`;\n    renderPagination(1);\n    return;\n  }\n\n  list.innerHTML = slice.map((d) => {\n    const itemIndex = DATA.indexOf(d);\n    const link = getItemLink(d);\n    const escapedLink = escapeHtml(link);\n    const isRead = Boolean(link && hasReadLink(link));\n    const isSelected = itemIndex === selectedPreviewIndex;\n    const isFeatured = isFeaturedResult(d);\n    const cardClass = `result-card${isFeatured ? ' is-featured' : ''}${isRead ? ' is-read' : ''}${isSelected ? ' is-selected' : ''}`;\n    const openClass = link ? `card-open${isRead ? ' is-read' : ''}` : 'card-open is-disabled';\n    const readBadge = isRead ? '<span class=\"read-badge\"><i class=\"ti ti-check\"></i> Sudah dibaca</span>' : '';\n    const featuredBadge = isFeatured ? '<span class=\"featured-badge\"><i class=\"ti ti-star-filled\"></i> Prioritas</span>' : '';\n    const typeMeta = getTypeMeta(d.type);\n    return `\n    <div class=\"${cardClass}\" data-index=\"${itemIndex}\">\n      <div class=\"card-icon ${typeMeta.iconClass}\">\n        <i class=\"ti ${typeMeta.icon}\"></i>\n      </div>\n      <div class=\"card-body\">\n        <div class=\"card-meta\">\n          <span class=\"type-badge ${typeMeta.badgeClass}\">${typeMeta.label}</span>\n          <span class=\"card-source\">${escapeHtml(d.source || 'Unknown')}</span>\n          ${featuredBadge}\n          ${readBadge}\n          <span class=\"card-date\"><i class=\"ti ti-calendar\" style=\"font-size:11px\"></i> ${formatDateID(d.date)}</span>\n        </div>\n        <div class=\"card-title\">${escapeHtml(d.title || '-')}</div>\n        <div class=\"card-snippet\">${d.region ? `Daerah: ${escapeHtml(d.region)}${d.issue ? ` | Isu: ${escapeHtml(d.issue)}` : ''}` : (d.snippet ? escapeHtml(d.snippet) : (d.matchedKeywords ? `Keyword: ${escapeHtml(d.matchedKeywords)}` : ''))}</div>\n        <div class=\"card-footer\">\n          <a class=\"${openClass}\" href=\"${escapedLink || '#'}\" data-read-link=\"${escapedLink}\" target=\"_blank\" rel=\"noopener noreferrer\">\n            <i class=\"ti ti-external-link\" style=\"font-size:12px\"></i> Buka berita\n          </a>\n        </div>\n      </div>\n    </div>\n  `;\n  }).join('');\n\n  renderPagination(pages);\n}\n\nfunction showPreview(item, index) {\n  if (!item) return;\n\n  document.querySelector('.main').classList.remove('is-preview-collapsed');\n  selectedPreviewIndex = index;\n  document.querySelectorAll('.result-card').forEach(card => {\n    card.classList.toggle('is-selected', Number(card.dataset.index) === selectedPreviewIndex);\n  });\n\n  const link = getItemLink(item);\n  document.getElementById('previewEmpty').hidden = true;\n  document.getElementById('previewContent').hidden = false;\n  document.getElementById('previewTitle').textContent = item.title || '-';\n  document.getElementById('previewType').textContent = getTypeMeta(item.type).label;\n  document.getElementById('previewSource').textContent = item.source || 'Unknown';\n  document.getElementById('previewDate').textContent = formatDateID(item.date);\n  document.getElementById('previewKeywords').textContent = item.region ? `Daerah: ${item.region}${item.issue ? ` | Isu: ${item.issue}` : ''}` : (item.matchedKeywords ? `Keyword: ${item.matchedKeywords}` : '');\n  document.getElementById('previewOpenLink').href = link || '#';\n\n  if (!link) {\n    showPreviewBlocked('URL tidak valid', 'Link berita kosong atau bukan URL yang bisa dibaca.');\n    return;\n  }\n\n  document.getElementById('previewBlocked').hidden = true;\n  document.getElementById('previewFrame').hidden = false;\n  document.getElementById('previewFrame').src = getPreviewUrl(link);\n\n  if (isGoogleNewsLink(link)) {\n    resolveSourceLink(item, index).then((resolvedLink) => {\n      if (selectedPreviewIndex !== index || !resolvedLink || resolvedLink === link) return;\n      document.getElementById('previewOpenLink').href = resolvedLink;\n      document.getElementById('previewFrame').src = getPreviewUrl(resolvedLink);\n      renderResults();\n    }).catch(() => {});\n  }\n}\n\nfunction clearPreview() {\n  selectedPreviewIndex = null;\n  document.querySelector('.main').classList.add('is-preview-collapsed');\n  document.querySelectorAll('.result-card').forEach(card => card.classList.remove('is-selected'));\n  document.getElementById('previewContent').hidden = true;\n  document.getElementById('previewEmpty').hidden = false;\n  document.getElementById('previewBlocked').hidden = true;\n  document.getElementById('previewFrame').src = 'about:blank';\n}\n\nfunction showPreviewBlocked(title, text) {\n  document.getElementById('previewBlockedTitle').textContent = title;\n  document.getElementById('previewBlockedText').textContent = text;\n  document.getElementById('previewFrame').hidden = true;\n  document.getElementById('previewFrame').src = 'about:blank';\n  document.getElementById('previewBlocked').hidden = false;\n}\n\n\nfunction renderPagination(pages) {\n  const pg = document.getElementById('pagination');\n  if (pages <= 1) { pg.innerHTML = ''; return; }\n  let html = `<button class=\"page-btn\" ${currentPage===1?'disabled':''} onclick=\"goPage(${currentPage-1})\"><i class=\"ti ti-chevron-left\"></i></button>`;\n  for (let i = 1; i <= pages; i++) {\n    html += `<button class=\"page-btn ${i===currentPage?'active':''}\" onclick=\"goPage(${i})\">${i}</button>`;\n  }\n  html += `<button class=\"page-btn\" ${currentPage===pages?'disabled':''} onclick=\"goPage(${currentPage+1})\"><i class=\"ti ti-chevron-right\"></i></button>`;\n  pg.innerHTML = html;\n}\n\nfunction goPage(p) { currentPage = p; renderResults(); }\n\ndocument.querySelectorAll('.type-btn').forEach(btn => {\n  btn.addEventListener('click', () => {\n    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));\n    btn.classList.add('active');\n    activeType = btn.dataset.type;\n    currentPage = 1;\n    renderResults();\n  });\n});\n\nconst sidebarHandle = document.getElementById('sidebarHandle');\nconst previewHandle = document.createElement('button');\npreviewHandle.className = 'preview-handle';\npreviewHandle.id = 'previewHandle';\npreviewHandle.type = 'button';\npreviewHandle.setAttribute('aria-label', 'Buka tutup panel kanan');\npreviewHandle.innerHTML = '<i class=\"ti ti-chevron-right\"></i>';\nsidebarHandle.insertAdjacentElement('afterend', previewHandle);\nsidebarHandle.addEventListener('click', () => {\n  document.querySelector('.main').classList.toggle('is-sidebar-collapsed');\n});\npreviewHandle.addEventListener('click', () => {\n  document.querySelector('.main').classList.toggle('is-preview-collapsed');\n});\n\ndocument.getElementById('searchInResults').addEventListener('input', () => { currentPage = 1; renderResults(); });\n\ndocument.getElementById('resultsList').addEventListener('click', async (e) => {\n  const openLink = e.target.closest('.card-open:not(.is-disabled)');\n  if (openLink) {\n    let link = openLink.dataset.readLink || openLink.href;\n    const card = openLink.closest('.result-card');\n    const index = card ? Number(card.dataset.index) : null;\n\n    if (isGoogleNewsLink(link) && Number.isInteger(index) && DATA[index]) {\n      e.preventDefault();\n      const oldHtml = openLink.innerHTML;\n      openLink.innerHTML = '<i class=\"ti ti-loader-2\" style=\"font-size:12px;animation:spin 1s linear infinite\"></i> Membuka...';\n      try {\n        link = await resolveSourceLink(DATA[index], index);\n        openLink.href = link;\n        openLink.dataset.readLink = link;\n        window.open(link, '_blank', 'noopener,noreferrer');\n        renderResults();\n      } catch (err) {\n        alert('Sumber asli belum bisa dibuka otomatis: ' + err.message);\n      } finally {\n        openLink.innerHTML = oldHtml;\n      }\n      return;\n    }\n\n    markReadLink(link);\n    openLink.classList.add('is-read');\n\n    if (!card) return;\n    card.classList.add('is-read');\n\n    const meta = card.querySelector('.card-meta');\n    if (meta && !meta.querySelector('.read-badge')) {\n      const date = meta.querySelector('.card-date');\n      const badge = '<span class=\"read-badge\"><i class=\"ti ti-check\"></i> Sudah dibaca</span>';\n      if (date) {\n        date.insertAdjacentHTML('beforebegin', badge);\n      } else {\n        meta.insertAdjacentHTML('beforeend', badge);\n      }\n    }\n    return;\n  }\n\n  const card = e.target.closest('.result-card:not(.skeleton-card)');\n  if (!card) return;\n  const index = Number(card.dataset.index);\n  if (Number.isNaN(index)) return;\n  showPreview(DATA[index], index);\n});\n\ndocument.getElementById('closePreviewBtn').addEventListener('click', clearPreview);\ndocument.getElementById('exportCsvBtn').addEventListener('click', downloadCsv5w1h);\n\nfunction toInputDate(date) {\n  const y = date.getFullYear();\n  const m = String(date.getMonth() + 1).padStart(2, '0');\n  const d = String(date.getDate()).padStart(2, '0');\n  return `${y}-${m}-${d}`;\n}\n\nfunction updateDateSummary() {\n  const fromValue = document.getElementById('fromDate').value;\n  const toValue = document.getElementById('toDate').value;\n  const el = document.getElementById('dateSummary');\n  const rangeInput = document.getElementById('rangePicker');\n  if (!fromValue && !toValue) {\n    rangeInput.value = 'Semua tanggal';\n    el.textContent = 'Semua tanggal';\n    return;\n  }\n\n  const format = (value) => {\n    if (!value) return 'awal';\n    const [year, month, day] = value.split('-');\n    return `${day} ${MONTHS[Number(month)-1].slice(0,3)} ${year}`;\n  };\n\n  rangeInput.value = toValue\n    ? `${format(fromValue)} -> ${format(toValue)}`\n    : format(fromValue);\n  el.textContent = toValue\n    ? `${format(fromValue)}  ->  ${format(toValue)}`\n    : `${format(fromValue)}  ->  akhir`;\n}\n\nfunction clearDateFilter() {\n  document.getElementById('fromDate').value = '';\n  document.getElementById('toDate').value = '';\n  const rangeInput = document.getElementById('rangePicker');\n  if (rangeInput) rangeInput.value = 'Semua tanggal';\n  if (rangePicker) rangePicker.clear();\n  updateDateSummary();\n}\n\nfunction initDateBetween() {\n  const now = new Date();\n  const firstDay = new Date(now.getFullYear(), 0, 1);\n  document.getElementById('fromDate').value = toInputDate(firstDay);\n  document.getElementById('toDate').value = toInputDate(now);\n\n  rangePicker = flatpickr('#rangePicker', {\n    mode: 'range',\n    dateFormat: 'Y-m-d',\n    defaultDate: [toInputDate(firstDay), toInputDate(now)],\n    monthSelectorType: 'dropdown',\n    allowInput: false,\n    clickOpens: true,\n    locale: {\n      firstDayOfWeek: 0,\n    },\n    onChange(selectedDates) {\n      document.getElementById('fromDate').value = selectedDates[0] ? toInputDate(selectedDates[0]) : '';\n      document.getElementById('toDate').value = selectedDates[1] ? toInputDate(selectedDates[1]) : '';\n      updateDateSummary();\n      renderResults();\n    },\n  });\n\n  updateDateSummary();\n}\n\ndocument.getElementById('clearDateBtn').addEventListener('click', () => {\n  clearDateFilter();\n  renderResults();\n});\n\nfunction addTag(inputId, listId, cls) {\n  const inp = document.getElementById(inputId);\n  const val = inp.value.trim();\n  if (!val) return;\n  const list = document.getElementById(listId);\n  const exists = [...list.querySelectorAll('.tag')].some(t => t.dataset.value.toLowerCase() === val.toLowerCase());\n  if (exists) { inp.value = ''; return; }\n  const span = document.createElement('span');\n  span.className = `tag ${cls}`;\n  span.dataset.value = val;\n  span.innerHTML = `${val} <span class=\"remove\">×</span>`;\n  list.appendChild(span);\n  inp.value = '';\n}\n\ndocument.getElementById('primaryInput').addEventListener('keydown', e => {\n  if (e.key === 'Enter') { e.preventDefault(); addTag('primaryInput', 'primaryTags', 'tag-primary'); }\n});\ndocument.getElementById('secondaryInput').addEventListener('keydown', e => {\n  if (e.key === 'Enter') { e.preventDefault(); addTag('secondaryInput', 'secondaryTags', 'tag-secondary'); }\n});\ndocument.getElementById('primaryTags').addEventListener('click', e => {\n  if (e.target.classList.contains('remove')) { e.target.parentElement.remove(); renderResults(); }\n});\ndocument.getElementById('secondaryTags').addEventListener('click', e => {\n  if (e.target.classList.contains('remove')) { e.target.parentElement.remove(); renderResults(); }\n});\n\nfunction setCrawlControls(running) {\n  const btn = document.getElementById('crawlBtn');\n  const cancelBtn = document.getElementById('cancelCrawlBtn');\n  btn.disabled = running;\n  btn.innerHTML = running\n    ? '<i class=\"ti ti-loader-2\" style=\"font-size:16px;animation:spin 1s linear infinite\"></i> Crawling...'\n    : '<i class=\"ti ti-radar\" style=\"font-size:16px\"></i> Mulai Crawling';\n  cancelBtn.hidden = !running;\n  cancelBtn.disabled = !running;\n}\n\nfunction cancelActiveCrawl() {\n  if (!activeCrawlController) return;\n  activeCrawlController.abort();\n  activeCrawlController = null;\n  isLoading = false;\n  setCrawlControls(false);\n  renderResults();\n}\n\nasync function runCrawl() {\n  const primaryKeywords = getTags('primaryTags');\n  const secondaryKeywords = getTags('secondaryTags');\n  if (!primaryKeywords.length || !secondaryKeywords.length) {\n    alert('Primary dan secondary keyword wajib diisi.');\n    return;\n  }\n\n  document.getElementById('searchInResults').value = '';\n  const fromDateValue = document.getElementById('fromDate').value || null;\n  const toDateValue = document.getElementById('toDate').value || null;\n\n  const payload = {\n    primaryKeywords,\n    secondaryKeywords,\n    startDate: fromDateValue,\n    endDate: toDateValue,\n  };\n  activeCrawlController = new AbortController();\n  const fetchOptions = {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify(payload),\n    signal: activeCrawlController.signal,\n  };\n  let response;\n  clearPreview();\n  isLoading = true;\n  setCrawlControls(true);\n  renderResults();\n\n  try {\n    response = await fetch('/api/crawl-all', fetchOptions);\n    if (!response.ok) {\n      response = await fetch('/api/crawl-all.js', fetchOptions);\n    }\n  } catch (err) {\n    if (err.name === 'AbortError') throw err;\n    response = await fetch('/api/crawl-all.js', fetchOptions);\n  }\n\n  if (!activeCrawlController || activeCrawlController.signal.aborted) return;\n  const data = await response.json();\n  if (!activeCrawlController || activeCrawlController.signal.aborted) return;\n  DATA = Array.isArray(data.results) ? data.results : [];\n  currentPage = 1;\n  isLoading = false;\n  activeCrawlController = null;\n  setCrawlControls(false);\n  renderResults();\n}\n\ndocument.getElementById('cancelCrawlBtn').addEventListener('click', cancelActiveCrawl);\n\ndocument.getElementById('crawlBtn').addEventListener('click', async () => {\n  if (activeCrawlController) return;\n  try {\n    await runCrawl();\n  } catch (e) {\n    if (e.name !== 'AbortError') {\n      alert('Gagal crawl: ' + e.message);\n    }\n  } finally {\n    isLoading = false;\n    activeCrawlController = null;\n    setCrawlControls(false);\n    renderResults();\n  }\n});\n\naddTag('primaryInput', 'primaryTags', 'tag-primary');\ndocument.getElementById('primaryTags').innerHTML = '';\naddTag('secondaryInput', 'secondaryTags', 'tag-secondary');\ndocument.getElementById('secondaryTags').innerHTML = '';\n['orangutan'].forEach(v => {\n  const s = document.createElement('span');\n  s.className = 'tag tag-primary';\n  s.dataset.value = v;\n  s.innerHTML = `${v} <span class=\"remove\">×</span>`;\n  document.getElementById('primaryTags').appendChild(s);\n});\n['konflik','perdagangan'].forEach(v => {\n  const s = document.createElement('span');\n  s.className = 'tag tag-secondary';\n  s.dataset.value = v;\n  s.innerHTML = `${v} <span class=\"remove\">×</span>`;\n  document.getElementById('secondaryTags').appendChild(s);\n});\ninitDateBetween();\nrenderResults();";
+const scriptText = "let DATA = [];\nlet activeType = 'all';\nlet currentPage = 1;\nlet isLoading = false;\nlet rangePicker = null;\nlet selectedPreviewIndex = null;\nlet activeCrawlController = null;\nconst resolvedLinkCache = new Map();\nconst PER_PAGE = 10;\nconst READ_LINKS_KEY = 'crawling-read-links';\nconst MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];\n\nfunction getTags(listId) {\n  return [...document.querySelectorAll(`#${listId} .tag`)].map(t => t.dataset.value).filter(Boolean);\n}\n\nfunction parseDateInput(inputId, endOfDay = false) {\n  const value = document.getElementById(inputId).value;\n  if (!value) return null;\n  const [year, month, day] = value.split('-').map(Number);\n  if (!year || !month || !day) return null;\n  return endOfDay ? new Date(year, month - 1, day, 23, 59, 59, 999) : new Date(year, month - 1, day, 0, 0, 0, 0);\n}\n\nfunction getFiltered() {\n  const q = document.getElementById('searchInResults').value.toLowerCase();\n  const fromDate = parseDateInput('fromDate');\n  const toDate = parseDateInput('toDate', true);\n\n  return prioritizeClientResults(DATA.filter(d => {\n    const matchType = activeType === 'all' || d.type === activeType;\n    const matchQ = !q || (d.title || '').toLowerCase().includes(q);\n\n    const itemDate = d.date ? new Date(d.date) : null;\n    const validDate = itemDate && !Number.isNaN(itemDate.getTime());\n\n    if (fromDate || toDate) {\n      if (!validDate) return matchType && matchQ;\n      if (fromDate && itemDate < fromDate) return false;\n      if (toDate && itemDate > toDate) return false;\n    }\n\n    return matchType && matchQ;\n  }));\n}\n\nfunction formatDateID(dateStr) {\n  if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return 'Tanggal tidak tersedia';\n  const d = new Date(dateStr);\n  if (Number.isNaN(d.getTime()) || d.getFullYear() <= 1970) return 'Tanggal tidak tersedia';\n  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });\n}\n\nfunction isFeaturedResult(item = {}) {\n  return Boolean(item.isFeatured || /betahita/i.test(`${item.source || ''} ${item.link || ''}`));\n}\n\nfunction resultTime(item = {}) {\n  if (!item.date) return 0;\n  const time = new Date(item.date).getTime();\n  return Number.isNaN(time) ? 0 : time;\n}\n\nfunction prioritizeClientResults(items = []) {\n  return items\n    .map((item, index) => ({ item, index }))\n    .sort((a, b) => {\n      const aFeatured = isFeaturedResult(a.item);\n      const bFeatured = isFeaturedResult(b.item);\n      if (aFeatured !== bFeatured) return aFeatured ? -1 : 1;\n\n      const dateDiff = resultTime(b.item) - resultTime(a.item);\n      if (dateDiff) return dateDiff;\n\n      return a.index - b.index;\n    })\n    .map(entry => entry.item);\n}\n\nfunction escapeHtml(value = '') {\n  return String(value)\n    .replace(/&/g, '&amp;')\n    .replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;')\n    .replace(/\"/g, '&quot;')\n    .replace(/'/g, '&#39;');\n}\n\nfunction safeLink(link) {\n  try {\n    const url = new URL(String(link || '').trim());\n    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';\n  } catch {\n    return '';\n  }\n}\n\nfunction getItemLink(item = {}) {\n  return safeLink(item.resolvedLink || item.finalUrl || item.link);\n}\n\nfunction isGoogleNewsLink(link = '') {\n  try {\n    return /(^|\\.)news\\.google\\.com$/i.test(new URL(link).hostname);\n  } catch {\n    return false;\n  }\n}\n\nasync function resolveSourceLink(item = {}, index = null) {\n  const currentLink = getItemLink(item);\n  if (!currentLink || !isGoogleNewsLink(currentLink)) return currentLink;\n  if (resolvedLinkCache.has(currentLink)) return resolvedLinkCache.get(currentLink);\n\n  const response = await fetch('/api/resolve-url', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      url: currentLink,\n      title: item.title || '',\n      source: item.source || '',\n    }),\n  });\n  const data = await response.json().catch(() => ({}));\n  if (!response.ok) throw new Error(data.error || 'Gagal membuka sumber asli');\n\n  const finalLink = safeLink(data.finalUrl);\n  if (!finalLink) throw new Error('URL sumber asli tidak valid');\n  resolvedLinkCache.set(currentLink, finalLink);\n  item.resolvedLink = finalLink;\n  if (Number.isInteger(index) && DATA[index]) DATA[index].resolvedLink = finalLink;\n  return finalLink;\n}\n\nfunction getPreviewUrl(link) {\n  return link ? `/api/preview?url=${encodeURIComponent(link)}` : 'about:blank';\n}\n\nfunction getReadLinks() {\n  try {\n    const links = JSON.parse(localStorage.getItem(READ_LINKS_KEY) || '[]');\n    return Array.isArray(links) ? links : [];\n  } catch {\n    return [];\n  }\n}\n\nfunction hasReadLink(link) {\n  return getReadLinks().includes(link);\n}\n\nfunction markReadLink(link) {\n  if (!link) return;\n  const links = new Set(getReadLinks());\n  links.add(link);\n  localStorage.setItem(READ_LINKS_KEY, JSON.stringify([...links].slice(-500)));\n}\n\n\nfunction cleanCsvValue(value = '') {\n  return String(value || '').replace(/\\s+/g, ' ').trim();\n}\n\nfunction csvCell(value = '') {\n  const text = cleanCsvValue(value);\n  return '\"' + text.replace(/\"/g, '\"\"') + '\"';\n}\n\nfunction firstSentence(text = '') {\n  return cleanCsvValue(text).split(/(?<=[.!?])\\s+/)[0] || '';\n}\n\nfunction sentenceWith(text = '', patterns = []) {\n  const sentences = cleanCsvValue(text).split(/(?<=[.!?])\\s+|\\s+-\\s+|\\s+\\|\\s+/).filter(Boolean);\n  return sentences.find(sentence => patterns.some(pattern => pattern.test(sentence))) || '';\n}\n\nfunction detectWhere(item = {}) {\n  if (item.region) return item.region;\n  const text = cleanCsvValue((item.title || '') + ' ' + (item.snippet || ''));\n  const match = text.match(/\\b(?:di|dari|ke)\\s+([A-Z][A-Za-zÀ-ÿ.'-]*(?:\\s+[A-Z][A-Za-zÀ-ÿ.'-]*){0,4})/);\n  return match ? match[1] : '';\n}\n\nfunction detectWho(item = {}) {\n  const text = cleanCsvValue(item.title || item.snippet || '');\n  const match = text.match(/\\b([A-Z][A-Za-zÀ-ÿ.'-]*(?:\\s+[A-Z][A-Za-zÀ-ÿ.'-]*){1,4})\\b/);\n  if (match) return match[1];\n  return item.source || '';\n}\n\nfunction buildFiveWOneH(item = {}) {\n  const title = cleanCsvValue(item.title || '-');\n  const snippet = cleanCsvValue(item.snippet || '');\n  const context = title + '. ' + snippet;\n  const why = sentenceWith(context, [/\\bkarena\\b/i, /\\bakibat\\b/i, /\\bsebab\\b/i, /\\bdampak\\b/i, /\\btujuan\\b/i, /\\bterkait\\b/i, /\\bdipicu\\b/i]);\n  const how = sentenceWith(context, [/\\bdengan\\b/i, /\\bmelalui\\b/i, /\\bcara\\b/i, /\\bupaya\\b/i, /\\bproses\\b/i, /\\bmodus\\b/i, /\\bkronologi\\b/i]);\n\n  return {\n    apa: title,\n    siapa: detectWho(item),\n    kapan: formatDateID(item.date),\n    diMana: detectWhere(item),\n    mengapa: why,\n    bagaimana: how || firstSentence(snippet),\n  };\n}\n\nfunction setExportState(running, text = '') {\n  const btn = document.getElementById('exportCsvBtn');\n  if (!btn) return;\n  btn.disabled = running || !getFiltered().length;\n  btn.innerHTML = running\n    ? '<i class=\"ti ti-loader-2\" style=\"font-size:16px;animation:spin 1s linear infinite\"></i> ' + (text || 'Membaca artikel...')\n    : '<i class=\"ti ti-download\"></i> Download CSV 5W+1H';\n}\n\nasync function fetchArticleFiveWOneH(rows = []) {\n  const response = await fetch('/api/article-5w1h', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      items: rows.map((item) => ({\n        title: item.title || '',\n        source: item.source || '',\n        date: item.date || '',\n        link: getItemLink(item),\n        snippet: item.snippet || '',\n        matchedKeywords: item.matchedKeywords || '',\n        region: item.region || '',\n        issue: item.issue || '',\n        type: item.type || '',\n      })),\n    }),\n  });\n  const data = await response.json().catch(() => ({}));\n  if (!response.ok) throw new Error(data.error || 'Gagal membaca isi artikel');\n  const byIndex = new Map();\n  (Array.isArray(data.results) ? data.results : []).forEach((entry) => {\n    byIndex.set(entry.index, entry);\n  });\n  return byIndex;\n}\n\nasync function downloadCsv5w1h() {\n  const rows = getFiltered();\n  if (!rows.length) {\n    alert('Belum ada hasil untuk di-download.');\n    return;\n  }\n\n  setExportState(true, 'Membaca artikel...');\n\n  try {\n    const enrichedByIndex = await fetchArticleFiveWOneH(rows);\n    setExportState(true, 'Membuat CSV...');\n\n    const headers = [\n      'No', 'Tipe', 'Judul', 'Sumber', 'Tanggal', 'Link', 'Final URL', 'Keyword',\n      'Apa (detail)', 'Siapa (detail)', 'Kapan (detail)', 'Di mana (detail)', 'Mengapa (detail)', 'Bagaimana (detail)',\n      'Ringkasan Artikel', 'Artikel Terbaca', 'Jumlah Paragraf', 'Catatan Ekstraksi', 'Snippet Crawl'\n    ];\n    const lines = [headers.map(csvCell).join(',')];\n\n    rows.forEach((item, index) => {\n      const enriched = enrichedByIndex.get(index) || {};\n      const fiveWOneH = enriched.fiveWOneH || buildFiveWOneH(item);\n      lines.push([\n        index + 1,\n        getTypeMeta(item.type).label,\n        item.title || '',\n        item.source || '',\n        formatDateID(item.date),\n        getItemLink(item),\n        enriched.finalUrl || getItemLink(item),\n        item.region ? 'Daerah: ' + item.region + (item.issue ? ' | Isu: ' + item.issue : '') : (item.matchedKeywords || ''),\n        fiveWOneH.apa,\n        fiveWOneH.siapa,\n        fiveWOneH.kapan,\n        fiveWOneH.diMana,\n        fiveWOneH.mengapa,\n        fiveWOneH.bagaimana,\n        fiveWOneH.ringkasanArtikel || '',\n        fiveWOneH.artikelTerbaca ? 'Ya' : 'Tidak',\n        fiveWOneH.jumlahParagraf || 0,\n        enriched.error || '',\n        item.snippet || '',\n      ].map(csvCell).join(','));\n    });\n\n    const blob = new Blob(['\\ufeff' + lines.join('\\n')], { type: 'text/csv;charset=utf-8;' });\n    const url = URL.createObjectURL(blob);\n    const link = document.createElement('a');\n    const stamp = new Date().toISOString().slice(0, 10);\n    link.href = url;\n    link.download = 'hasil-crawling-5w1h-artikel-' + stamp + '.csv';\n    document.body.appendChild(link);\n    link.click();\n    link.remove();\n    URL.revokeObjectURL(url);\n  } catch (err) {\n    alert('Gagal membuat CSV 5W+1H dari isi artikel: ' + err.message);\n  } finally {\n    setExportState(false);\n  }\n}\nfunction updateCounters(filtered) {\n  const news = filtered.filter(x => x.type === 'news').length;\n  const journal = filtered.filter(x => x.type === 'journal').length;\n  const regional = filtered.filter(x => x.type === 'regional').length;\n  document.getElementById('cnt-all').textContent = filtered.length;\n  document.getElementById('cnt-berita').textContent = news;\n  document.getElementById('cnt-jurnal').textContent = journal;\n  document.getElementById('cnt-regional').textContent = regional;\n  document.getElementById('totalCount').textContent = filtered.length;\n  document.getElementById('newsCount').textContent = news;\n  document.getElementById('journalCount').textContent = journal;\n  document.getElementById('regionalCount').textContent = regional;\n  const exportBtn = document.getElementById('exportCsvBtn');\n  if (exportBtn) exportBtn.disabled = !filtered.length;\n}\n\nfunction getTypeMeta(type) {\n  if (type === 'journal') return { icon: 'ti-book', iconClass: 'icon-journal', badgeClass: 'badge-journal', label: 'JURNAL' };\n  if (type === 'regional') return { icon: 'ti-map-pin', iconClass: 'icon-regional', badgeClass: 'badge-regional', label: 'ISU' };\n  return { icon: 'ti-news', iconClass: 'icon-news', badgeClass: 'badge-news', label: 'BERITA' };\n}\n\nfunction renderSkeletons(count = 5) {\n  const list = document.getElementById('resultsList');\n  const pg = document.getElementById('pagination');\n  list.innerHTML = Array.from({ length: count }, () => `\n    <div class=\"result-card skeleton-card\">\n      <div class=\"skeleton-icon\"></div>\n      <div class=\"card-body\">\n        <div class=\"skeleton-meta\">\n          <div class=\"skeleton-pill\"></div>\n          <div class=\"skeleton-line skeleton-source\"></div>\n          <div class=\"skeleton-line skeleton-date\"></div>\n        </div>\n        <div class=\"skeleton-line lg\"></div>\n        <div class=\"skeleton-line md\"></div>\n        <div class=\"skeleton-line sm\"></div>\n        <div class=\"skeleton-footer\">\n          <div class=\"skeleton-button\"></div>\n        </div>\n      </div>\n    </div>\n  `).join('');\n  pg.innerHTML = '';\n}\n\nfunction renderResults() {\n  if (isLoading) {\n    renderSkeletons();\n    return;\n  }\n\n  const filtered = getFiltered();\n  updateCounters(filtered);\n\n  const list = document.getElementById('resultsList');\n  const total = filtered.length;\n  const pages = Math.max(1, Math.ceil(total / PER_PAGE));\n  currentPage = Math.min(currentPage, pages);\n  const start = (currentPage - 1) * PER_PAGE;\n  const slice = filtered.slice(start, start + PER_PAGE);\n\n  if (!slice.length) {\n    list.innerHTML = `<div class=\"empty\"><i class=\"ti ti-mood-empty\"></i><p>Tidak ada hasil ditemukan</p></div>`;\n    renderPagination(1);\n    return;\n  }\n\n  list.innerHTML = slice.map((d) => {\n    const itemIndex = DATA.indexOf(d);\n    const link = getItemLink(d);\n    const escapedLink = escapeHtml(link);\n    const isRead = Boolean(link && hasReadLink(link));\n    const isSelected = itemIndex === selectedPreviewIndex;\n    const isFeatured = isFeaturedResult(d);\n    const cardClass = `result-card${isFeatured ? ' is-featured' : ''}${isRead ? ' is-read' : ''}${isSelected ? ' is-selected' : ''}`;\n    const openClass = link ? `card-open${isRead ? ' is-read' : ''}` : 'card-open is-disabled';\n    const readBadge = isRead ? '<span class=\"read-badge\"><i class=\"ti ti-check\"></i> Sudah dibaca</span>' : '';\n    const featuredBadge = isFeatured ? '<span class=\"featured-badge\"><i class=\"ti ti-star-filled\"></i> Media Terpercaya</span>' : '';\n    const typeMeta = getTypeMeta(d.type);\n    return `\n    <div class=\"${cardClass}\" data-index=\"${itemIndex}\">\n      <div class=\"card-icon ${typeMeta.iconClass}\">\n        <i class=\"ti ${typeMeta.icon}\"></i>\n      </div>\n      <div class=\"card-body\">\n        <div class=\"card-meta\">\n          <span class=\"type-badge ${typeMeta.badgeClass}\">${typeMeta.label}</span>\n          <span class=\"card-source\">${escapeHtml(d.source || 'Unknown')}</span>\n          ${featuredBadge}\n          ${readBadge}\n          <span class=\"card-date\"><i class=\"ti ti-calendar\" style=\"font-size:11px\"></i> ${formatDateID(d.date)}</span>\n        </div>\n        <div class=\"card-title\">${escapeHtml(d.title || '-')}</div>\n        <div class=\"card-snippet\">${d.region ? `Daerah: ${escapeHtml(d.region)}${d.issue ? ` | Isu: ${escapeHtml(d.issue)}` : ''}` : (d.snippet ? escapeHtml(d.snippet) : (d.matchedKeywords ? `Keyword: ${escapeHtml(d.matchedKeywords)}` : ''))}</div>\n        <div class=\"card-footer\">\n          <a class=\"${openClass}\" href=\"${escapedLink || '#'}\" data-read-link=\"${escapedLink}\" target=\"_blank\" rel=\"noopener noreferrer\">\n            <i class=\"ti ti-external-link\" style=\"font-size:12px\"></i> Buka berita\n          </a>\n        </div>\n      </div>\n    </div>\n  `;\n  }).join('');\n\n  renderPagination(pages);\n}\n\nfunction showPreview(item, index) {\n  if (!item) return;\n\n  document.querySelector('.main').classList.remove('is-preview-collapsed');\n  selectedPreviewIndex = index;\n  document.querySelectorAll('.result-card').forEach(card => {\n    card.classList.toggle('is-selected', Number(card.dataset.index) === selectedPreviewIndex);\n  });\n\n  const link = getItemLink(item);\n  document.getElementById('previewEmpty').hidden = true;\n  document.getElementById('previewContent').hidden = false;\n  document.getElementById('previewTitle').textContent = item.title || '-';\n  document.getElementById('previewType').textContent = getTypeMeta(item.type).label;\n  document.getElementById('previewSource').textContent = item.source || 'Unknown';\n  document.getElementById('previewDate').textContent = formatDateID(item.date);\n  document.getElementById('previewKeywords').textContent = item.region ? `Daerah: ${item.region}${item.issue ? ` | Isu: ${item.issue}` : ''}` : (item.matchedKeywords ? `Keyword: ${item.matchedKeywords}` : '');\n  document.getElementById('previewOpenLink').href = link || '#';\n\n  if (!link) {\n    showPreviewBlocked('URL tidak valid', 'Link berita kosong atau bukan URL yang bisa dibaca.');\n    return;\n  }\n\n  document.getElementById('previewBlocked').hidden = true;\n  document.getElementById('previewFrame').hidden = false;\n  document.getElementById('previewFrame').src = getPreviewUrl(link);\n\n  if (isGoogleNewsLink(link)) {\n    resolveSourceLink(item, index).then((resolvedLink) => {\n      if (selectedPreviewIndex !== index || !resolvedLink || resolvedLink === link) return;\n      document.getElementById('previewOpenLink').href = resolvedLink;\n      document.getElementById('previewFrame').src = getPreviewUrl(resolvedLink);\n      renderResults();\n    }).catch(() => {});\n  }\n}\n\nfunction clearPreview() {\n  selectedPreviewIndex = null;\n  document.querySelector('.main').classList.add('is-preview-collapsed');\n  document.querySelectorAll('.result-card').forEach(card => card.classList.remove('is-selected'));\n  document.getElementById('previewContent').hidden = true;\n  document.getElementById('previewEmpty').hidden = false;\n  document.getElementById('previewBlocked').hidden = true;\n  document.getElementById('previewFrame').src = 'about:blank';\n}\n\nfunction showPreviewBlocked(title, text) {\n  document.getElementById('previewBlockedTitle').textContent = title;\n  document.getElementById('previewBlockedText').textContent = text;\n  document.getElementById('previewFrame').hidden = true;\n  document.getElementById('previewFrame').src = 'about:blank';\n  document.getElementById('previewBlocked').hidden = false;\n}\n\n\nfunction renderPagination(pages) {\n  const pg = document.getElementById('pagination');\n  if (pages <= 1) { pg.innerHTML = ''; return; }\n  let html = `<button class=\"page-btn\" ${currentPage===1?'disabled':''} onclick=\"goPage(${currentPage-1})\"><i class=\"ti ti-chevron-left\"></i></button>`;\n  for (let i = 1; i <= pages; i++) {\n    html += `<button class=\"page-btn ${i===currentPage?'active':''}\" onclick=\"goPage(${i})\">${i}</button>`;\n  }\n  html += `<button class=\"page-btn\" ${currentPage===pages?'disabled':''} onclick=\"goPage(${currentPage+1})\"><i class=\"ti ti-chevron-right\"></i></button>`;\n  pg.innerHTML = html;\n}\n\nfunction goPage(p) { currentPage = p; renderResults(); }\n\ndocument.querySelectorAll('.type-btn').forEach(btn => {\n  btn.addEventListener('click', () => {\n    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));\n    btn.classList.add('active');\n    activeType = btn.dataset.type;\n    currentPage = 1;\n    renderResults();\n  });\n});\n\nconst sidebarHandle = document.getElementById('sidebarHandle');\nconst previewHandle = document.createElement('button');\npreviewHandle.className = 'preview-handle';\npreviewHandle.id = 'previewHandle';\npreviewHandle.type = 'button';\npreviewHandle.setAttribute('aria-label', 'Buka tutup panel kanan');\npreviewHandle.innerHTML = '<i class=\"ti ti-chevron-right\"></i>';\nsidebarHandle.insertAdjacentElement('afterend', previewHandle);\nsidebarHandle.addEventListener('click', () => {\n  document.querySelector('.main').classList.toggle('is-sidebar-collapsed');\n});\npreviewHandle.addEventListener('click', () => {\n  document.querySelector('.main').classList.toggle('is-preview-collapsed');\n});\n\ndocument.getElementById('searchInResults').addEventListener('input', () => { currentPage = 1; renderResults(); });\n\ndocument.getElementById('resultsList').addEventListener('click', async (e) => {\n  const openLink = e.target.closest('.card-open:not(.is-disabled)');\n  if (openLink) {\n    let link = openLink.dataset.readLink || openLink.href;\n    const card = openLink.closest('.result-card');\n    const index = card ? Number(card.dataset.index) : null;\n\n    if (isGoogleNewsLink(link) && Number.isInteger(index) && DATA[index]) {\n      e.preventDefault();\n      const oldHtml = openLink.innerHTML;\n      openLink.innerHTML = '<i class=\"ti ti-loader-2\" style=\"font-size:12px;animation:spin 1s linear infinite\"></i> Membuka...';\n      try {\n        link = await resolveSourceLink(DATA[index], index);\n        openLink.href = link;\n        openLink.dataset.readLink = link;\n        window.open(link, '_blank', 'noopener,noreferrer');\n        renderResults();\n      } catch (err) {\n        alert('Sumber asli belum bisa dibuka otomatis: ' + err.message);\n      } finally {\n        openLink.innerHTML = oldHtml;\n      }\n      return;\n    }\n\n    markReadLink(link);\n    openLink.classList.add('is-read');\n\n    if (!card) return;\n    card.classList.add('is-read');\n\n    const meta = card.querySelector('.card-meta');\n    if (meta && !meta.querySelector('.read-badge')) {\n      const date = meta.querySelector('.card-date');\n      const badge = '<span class=\"read-badge\"><i class=\"ti ti-check\"></i> Sudah dibaca</span>';\n      if (date) {\n        date.insertAdjacentHTML('beforebegin', badge);\n      } else {\n        meta.insertAdjacentHTML('beforeend', badge);\n      }\n    }\n    return;\n  }\n\n  const card = e.target.closest('.result-card:not(.skeleton-card)');\n  if (!card) return;\n  const index = Number(card.dataset.index);\n  if (Number.isNaN(index)) return;\n  showPreview(DATA[index], index);\n});\n\ndocument.getElementById('closePreviewBtn').addEventListener('click', clearPreview);\ndocument.getElementById('exportCsvBtn').addEventListener('click', downloadCsv5w1h);\n\nfunction toInputDate(date) {\n  const y = date.getFullYear();\n  const m = String(date.getMonth() + 1).padStart(2, '0');\n  const d = String(date.getDate()).padStart(2, '0');\n  return `${y}-${m}-${d}`;\n}\n\nfunction updateDateSummary() {\n  const fromValue = document.getElementById('fromDate').value;\n  const toValue = document.getElementById('toDate').value;\n  const el = document.getElementById('dateSummary');\n  const rangeInput = document.getElementById('rangePicker');\n  if (!fromValue && !toValue) {\n    rangeInput.value = 'Semua tanggal';\n    el.textContent = 'Semua tanggal';\n    return;\n  }\n\n  const format = (value) => {\n    if (!value) return 'awal';\n    const [year, month, day] = value.split('-');\n    return `${day} ${MONTHS[Number(month)-1].slice(0,3)} ${year}`;\n  };\n\n  rangeInput.value = toValue\n    ? `${format(fromValue)} -> ${format(toValue)}`\n    : format(fromValue);\n  el.textContent = toValue\n    ? `${format(fromValue)}  ->  ${format(toValue)}`\n    : `${format(fromValue)}  ->  akhir`;\n}\n\nfunction clearDateFilter() {\n  document.getElementById('fromDate').value = '';\n  document.getElementById('toDate').value = '';\n  const rangeInput = document.getElementById('rangePicker');\n  if (rangeInput) rangeInput.value = 'Semua tanggal';\n  if (rangePicker) rangePicker.clear();\n  updateDateSummary();\n}\n\nfunction initDateBetween() {\n  const now = new Date();\n  const firstDay = new Date(now.getFullYear(), 0, 1);\n  document.getElementById('fromDate').value = toInputDate(firstDay);\n  document.getElementById('toDate').value = toInputDate(now);\n\n  rangePicker = flatpickr('#rangePicker', {\n    mode: 'range',\n    dateFormat: 'Y-m-d',\n    defaultDate: [toInputDate(firstDay), toInputDate(now)],\n    monthSelectorType: 'dropdown',\n    allowInput: false,\n    clickOpens: true,\n    locale: {\n      firstDayOfWeek: 0,\n    },\n    onChange(selectedDates) {\n      document.getElementById('fromDate').value = selectedDates[0] ? toInputDate(selectedDates[0]) : '';\n      document.getElementById('toDate').value = selectedDates[1] ? toInputDate(selectedDates[1]) : '';\n      updateDateSummary();\n      renderResults();\n    },\n  });\n\n  updateDateSummary();\n}\n\ndocument.getElementById('clearDateBtn').addEventListener('click', () => {\n  clearDateFilter();\n  renderResults();\n});\n\nfunction addTag(inputId, listId, cls) {\n  const inp = document.getElementById(inputId);\n  const val = inp.value.trim();\n  if (!val) return;\n  const list = document.getElementById(listId);\n  const exists = [...list.querySelectorAll('.tag')].some(t => t.dataset.value.toLowerCase() === val.toLowerCase());\n  if (exists) { inp.value = ''; return; }\n  const span = document.createElement('span');\n  span.className = `tag ${cls}`;\n  span.dataset.value = val;\n  span.innerHTML = `${val} <span class=\"remove\">×</span>`;\n  list.appendChild(span);\n  inp.value = '';\n}\n\ndocument.getElementById('primaryInput').addEventListener('keydown', e => {\n  if (e.key === 'Enter') { e.preventDefault(); addTag('primaryInput', 'primaryTags', 'tag-primary'); }\n});\ndocument.getElementById('secondaryInput').addEventListener('keydown', e => {\n  if (e.key === 'Enter') { e.preventDefault(); addTag('secondaryInput', 'secondaryTags', 'tag-secondary'); }\n});\ndocument.getElementById('primaryTags').addEventListener('click', e => {\n  if (e.target.classList.contains('remove')) { e.target.parentElement.remove(); renderResults(); }\n});\ndocument.getElementById('secondaryTags').addEventListener('click', e => {\n  if (e.target.classList.contains('remove')) { e.target.parentElement.remove(); renderResults(); }\n});\n\nfunction setCrawlControls(running) {\n  const btn = document.getElementById('crawlBtn');\n  const cancelBtn = document.getElementById('cancelCrawlBtn');\n  btn.disabled = running;\n  btn.innerHTML = running\n    ? '<i class=\"ti ti-loader-2\" style=\"font-size:16px;animation:spin 1s linear infinite\"></i> Crawling...'\n    : '<i class=\"ti ti-radar\" style=\"font-size:16px\"></i> Mulai Crawling';\n  cancelBtn.hidden = !running;\n  cancelBtn.disabled = !running;\n}\n\nfunction cancelActiveCrawl() {\n  if (!activeCrawlController) return;\n  activeCrawlController.abort();\n  activeCrawlController = null;\n  isLoading = false;\n  setCrawlControls(false);\n  renderResults();\n}\n\nasync function runCrawl() {\n  const primaryKeywords = getTags('primaryTags');\n  const secondaryKeywords = getTags('secondaryTags');\n  if (!primaryKeywords.length || !secondaryKeywords.length) {\n    alert('Primary dan secondary keyword wajib diisi.');\n    return;\n  }\n\n  document.getElementById('searchInResults').value = '';\n  const fromDateValue = document.getElementById('fromDate').value || null;\n  const toDateValue = document.getElementById('toDate').value || null;\n\n  const payload = {\n    primaryKeywords,\n    secondaryKeywords,\n    startDate: fromDateValue,\n    endDate: toDateValue,\n  };\n  activeCrawlController = new AbortController();\n  const fetchOptions = {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify(payload),\n    signal: activeCrawlController.signal,\n  };\n  let response;\n  clearPreview();\n  isLoading = true;\n  setCrawlControls(true);\n  renderResults();\n\n  try {\n    response = await fetch('/api/crawl-all', fetchOptions);\n    if (!response.ok) {\n      response = await fetch('/api/crawl-all.js', fetchOptions);\n    }\n  } catch (err) {\n    if (err.name === 'AbortError') throw err;\n    response = await fetch('/api/crawl-all.js', fetchOptions);\n  }\n\n  if (!activeCrawlController || activeCrawlController.signal.aborted) return;\n  const data = await response.json();\n  if (!activeCrawlController || activeCrawlController.signal.aborted) return;\n  DATA = Array.isArray(data.results) ? data.results : [];\n  currentPage = 1;\n  isLoading = false;\n  activeCrawlController = null;\n  setCrawlControls(false);\n  renderResults();\n}\n\ndocument.getElementById('cancelCrawlBtn').addEventListener('click', cancelActiveCrawl);\n\ndocument.getElementById('crawlBtn').addEventListener('click', async () => {\n  if (activeCrawlController) return;\n  try {\n    await runCrawl();\n  } catch (e) {\n    if (e.name !== 'AbortError') {\n      alert('Gagal crawl: ' + e.message);\n    }\n  } finally {\n    isLoading = false;\n    activeCrawlController = null;\n    setCrawlControls(false);\n    renderResults();\n  }\n});\n\naddTag('primaryInput', 'primaryTags', 'tag-primary');\ndocument.getElementById('primaryTags').innerHTML = '';\naddTag('secondaryInput', 'secondaryTags', 'tag-secondary');\ndocument.getElementById('secondaryTags').innerHTML = '';\n['orangutan'].forEach(v => {\n  const s = document.createElement('span');\n  s.className = 'tag tag-primary';\n  s.dataset.value = v;\n  s.innerHTML = `${v} <span class=\"remove\">×</span>`;\n  document.getElementById('primaryTags').appendChild(s);\n});\n['konflik','perdagangan'].forEach(v => {\n  const s = document.createElement('span');\n  s.className = 'tag tag-secondary';\n  s.dataset.value = v;\n  s.innerHTML = `${v} <span class=\"remove\">×</span>`;\n  document.getElementById('secondaryTags').appendChild(s);\n});\ninitDateBetween();\nrenderResults();";
 
 const crawlingPolishTheme = String.raw`
 .stats-bar {
@@ -1662,6 +1646,389 @@ html[data-theme="dark"] .preview-empty p {
 }
 `;
 
+const plainCrawlingBackgroundTheme = String.raw`
+html,
+body,
+.app-content,
+.shell,
+.main,
+.content,
+.results,
+.preview-panel,
+.preview-empty,
+.preview-frame-wrap,
+.preview-frame,
+.preview-blocked {
+  background: #fff !important;
+  background-image: none !important;
+}
+
+body::before,
+body::after,
+.shell::before {
+  display: none !important;
+  content: none !important;
+}
+
+.shell {
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.filter-sidebar,
+.toolbar,
+.stats-bar,
+.preview-top,
+.preview-note,
+.regional-bar {
+  background: #fff !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+html[data-theme="dark"] .app-content,
+html[data-theme="dark"] .shell,
+html[data-theme="dark"] .main,
+html[data-theme="dark"] .content,
+html[data-theme="dark"] .results,
+html[data-theme="dark"] .preview-panel,
+html[data-theme="dark"] .preview-empty,
+html[data-theme="dark"] .preview-frame-wrap,
+html[data-theme="dark"] .preview-frame,
+html[data-theme="dark"] .preview-blocked,
+html[data-theme="dark"] .filter-sidebar,
+html[data-theme="dark"] .toolbar,
+html[data-theme="dark"] .stats-bar,
+html[data-theme="dark"] .preview-top,
+html[data-theme="dark"] .preview-note,
+html[data-theme="dark"] .regional-bar {
+  background: #000 !important;
+  background-image: none !important;
+}
+
+body,
+input,
+button,
+select,
+.tag,
+.stat-item,
+.result-card,
+.preview-panel {
+  font-family: var(--font-body, Manrope, Arial, sans-serif) !important;
+}
+
+.shell {
+  border: 0 !important;
+  color: var(--text) !important;
+}
+
+.filter-sidebar,
+.toolbar,
+.stats-bar,
+.preview-top,
+.preview-note,
+.regional-bar {
+  border-color: #dddddd !important;
+}
+
+.filter-sidebar {
+  padding: 14px 14px !important;
+  border-right: 1px solid #dddddd !important;
+  gap: 14px !important;
+}
+
+.toolbar {
+  padding: 10px 20px !important;
+  border-bottom: 1px solid #dddddd !important;
+}
+
+.search-bar input,
+.input-wrap input,
+.range-picker,
+.date-summary {
+  height: 36px !important;
+  border: 1px solid #d2d2d2 !important;
+  background: #fff !important;
+  color: #111 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  box-shadow: none !important;
+}
+
+.keyword-notice {
+  min-height: 34px !important;
+  padding: 0 12px !important;
+  font-size: 11px !important;
+}
+
+.section-label {
+  margin-bottom: 8px !important;
+  font-size: 10px !important;
+}
+
+.keyword-group,
+.date-filter {
+  gap: 8px !important;
+}
+
+.input-wrap .input-icon,
+.search-icon {
+  font-size: 14px !important;
+}
+
+.keyword-notice,
+.type-btn,
+.between-box,
+.tag,
+.stat-item,
+.result-card,
+.page-btn,
+.btn-export,
+.btn-cancel {
+  border: 1px solid #d2d2d2 !important;
+  background: #fff !important;
+  color: #222 !important;
+  box-shadow: none !important;
+}
+
+.stats-bar {
+  min-height: 44px !important;
+  padding: 7px 20px !important;
+  border-bottom: 1px solid #dddddd !important;
+  gap: 8px !important;
+}
+
+.stat-item {
+  min-height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  gap: 6px !important;
+}
+
+.stat-item strong {
+  color: #111 !important;
+  font-size: 14px !important;
+}
+
+.stat-dot {
+  background: #111 !important;
+  border-color: #111 !important;
+}
+
+.btn-crawl,
+.type-btn.active,
+.page-btn.active {
+  background: #111 !important;
+  border-color: #111 !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+.btn-crawl {
+  height: 38px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+}
+
+.btn-cancel,
+.btn-export {
+  min-height: 32px !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+}
+
+.type-btn {
+  min-height: 34px !important;
+  padding: 0 10px !important;
+  font-size: 12px !important;
+}
+
+.tag {
+  min-height: 28px !important;
+  padding: 0 9px !important;
+  font-size: 11px !important;
+}
+
+.between-box {
+  padding: 10px !important;
+}
+
+.between-head {
+  margin-bottom: 8px !important;
+}
+
+.results {
+  padding: 14px 20px !important;
+}
+
+.result-card {
+  padding: 14px !important;
+  border-color: #dddddd !important;
+  background: #fff !important;
+  gap: 12px !important;
+}
+
+.result-card:hover,
+.result-card.is-selected {
+  background: #fafafa !important;
+  border-color: #999 !important;
+  transform: none !important;
+}
+
+.card-icon,
+.type-badge,
+.featured-badge,
+.read-badge {
+  border: 1px solid #d2d2d2 !important;
+  background: #fff !important;
+  color: #111 !important;
+  box-shadow: none !important;
+}
+
+.card-title {
+  color: #111 !important;
+  font-weight: 800 !important;
+  font-size: 16px !important;
+  line-height: 1.35 !important;
+}
+
+.card-snippet,
+.card-source,
+.card-date {
+  color: #666 !important;
+  font-size: 12px !important;
+}
+
+.card-open,
+.preview-link {
+  min-height: 28px !important;
+  padding: 0 10px !important;
+  border: 1px solid #111 !important;
+  background: #fff !important;
+  color: #111 !important;
+  font-weight: 700 !important;
+  font-size: 11px !important;
+}
+
+.card-open:hover,
+.preview-link:hover {
+  background: #111 !important;
+  color: #fff !important;
+}
+
+.preview-panel {
+  border-left: 1px solid #dddddd !important;
+}
+
+.preview-top {
+  padding: 14px !important;
+}
+
+.preview-title {
+  font-size: 18px !important;
+}
+
+.preview-note {
+  padding: 10px 14px !important;
+  font-size: 11px !important;
+}
+
+.sidebar-handle,
+.preview-handle {
+  width: 28px !important;
+}
+
+.sidebar-handle:hover,
+.preview-handle:hover {
+  background: #111 !important;
+  border-color: #111 !important;
+  color: #fff !important;
+}
+
+html[data-theme="dark"] .sidebar-handle:hover,
+html[data-theme="dark"] .preview-handle:hover {
+  background: #fff !important;
+  border-color: #fff !important;
+  color: #000 !important;
+}
+
+html[data-theme="dark"] .filter-sidebar,
+html[data-theme="dark"] .toolbar,
+html[data-theme="dark"] .stats-bar,
+html[data-theme="dark"] .preview-panel,
+html[data-theme="dark"] .preview-top,
+html[data-theme="dark"] .preview-note,
+html[data-theme="dark"] .regional-bar {
+  border-color: #242424 !important;
+}
+
+html[data-theme="dark"] .search-bar input,
+html[data-theme="dark"] .input-wrap input,
+html[data-theme="dark"] .range-picker,
+html[data-theme="dark"] .date-summary,
+html[data-theme="dark"] .keyword-notice,
+html[data-theme="dark"] .type-btn,
+html[data-theme="dark"] .between-box,
+html[data-theme="dark"] .tag,
+html[data-theme="dark"] .stat-item,
+html[data-theme="dark"] .result-card,
+html[data-theme="dark"] .page-btn,
+html[data-theme="dark"] .btn-export,
+html[data-theme="dark"] .btn-cancel,
+html[data-theme="dark"] .card-icon,
+html[data-theme="dark"] .type-badge,
+html[data-theme="dark"] .featured-badge,
+html[data-theme="dark"] .read-badge {
+  background: #000 !important;
+  border-color: #2a2a2a !important;
+  color: #f5f5f5 !important;
+}
+
+html[data-theme="dark"] .search-bar input::placeholder,
+html[data-theme="dark"] .input-wrap input::placeholder,
+html[data-theme="dark"] .card-snippet,
+html[data-theme="dark"] .card-source,
+html[data-theme="dark"] .card-date {
+  color: #a8a8a8 !important;
+}
+
+html[data-theme="dark"] .btn-crawl,
+html[data-theme="dark"] .type-btn.active,
+html[data-theme="dark"] .page-btn.active {
+  background: #fff !important;
+  border-color: #fff !important;
+  color: #000 !important;
+}
+
+html[data-theme="dark"] .stat-item strong,
+html[data-theme="dark"] .card-title {
+  color: #f5f5f5 !important;
+}
+
+html[data-theme="dark"] .stat-dot {
+  background: #f5f5f5 !important;
+  border-color: #f5f5f5 !important;
+}
+
+html[data-theme="dark"] .result-card:hover,
+html[data-theme="dark"] .result-card.is-selected {
+  background: #080808 !important;
+  border-color: #5a5a5a !important;
+}
+
+html[data-theme="dark"] .card-open,
+html[data-theme="dark"] .preview-link {
+  background: #fff !important;
+  border-color: #fff !important;
+  color: #000 !important;
+}
+`;
+
 const heroIconAndLinkGuardScript = String.raw`
 function isAssetUrl(url) {
   const host = url.hostname.replace(/^www\./i, '').toLowerCase();
@@ -1690,6 +2057,87 @@ function getItemLink(item = {}) {
   return '';
 }
 
+function getCurrentUserId() {
+  try {
+    const key = 'crawling-user-id';
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = 'user-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    return 'anonymous';
+  }
+}
+
+function getReadStorageKey() {
+  return 'crawling-read-links:' + getCurrentUserId();
+}
+
+function getReadLinks() {
+  try {
+    const maxAge = 60 * 60 * 1000;
+    const now = Date.now();
+    const raw = JSON.parse(localStorage.getItem(getReadStorageKey()) || '{}');
+    const next = {};
+    const links = [];
+    Object.entries(raw && typeof raw === 'object' ? raw : {}).forEach(([link, time]) => {
+      const ts = Number(time);
+      if (link && ts && now - ts <= maxAge) {
+        next[link] = ts;
+        links.push(link);
+      }
+    });
+    localStorage.setItem(getReadStorageKey(), JSON.stringify(next));
+    return links;
+  } catch {
+    return [];
+  }
+}
+
+function hasReadLink(link) {
+  return getReadLinks().includes(link);
+}
+
+function markReadLink(link) {
+  if (!link) return;
+  try {
+    const maxAge = 60 * 60 * 1000;
+    const now = Date.now();
+    const raw = JSON.parse(localStorage.getItem(getReadStorageKey()) || '{}');
+    const next = {};
+    Object.entries(raw && typeof raw === 'object' ? raw : {}).forEach(([savedLink, time]) => {
+      const ts = Number(time);
+      if (savedLink && ts && now - ts <= maxAge) next[savedLink] = ts;
+    });
+    next[link] = now;
+    localStorage.setItem(getReadStorageKey(), JSON.stringify(next));
+  } catch {}
+}
+
+if (!window.__crawlFetchUserWrapped) {
+  window.__crawlFetchUserWrapped = true;
+  window.__crawlOriginalFetch = window.fetch.bind(window);
+  window.fetch = (input, init = {}) => {
+    const url = typeof input === 'string' ? input : input?.url || '';
+    const method = String(init?.method || (typeof input === 'object' ? input.method : '') || 'GET').toUpperCase();
+    if (url.includes('/api/crawl-all') && method === 'POST') {
+      const headers = new Headers(init.headers || {});
+      headers.set('x-crawl-user', getCurrentUserId());
+      return window.__crawlOriginalFetch(input, { ...init, headers });
+    }
+    return window.__crawlOriginalFetch(input, init);
+  };
+}
+
+document.addEventListener('click', (event) => {
+  const openLink = event.target.closest?.('.card-open:not(.is-disabled)');
+  if (!openLink) return;
+  const link = openLink.dataset.readLink || openLink.href;
+  if (link) markReadLink(link);
+}, true);
+
 async function resolveSourceLink(item = {}, index = null) {
   const currentLink = getItemLink(item);
   if (!currentLink || !isGoogleNewsLink(currentLink)) return currentLink;
@@ -1713,6 +2161,7 @@ async function resolveSourceLink(item = {}, index = null) {
     if (finalLink) {
       item.resolvedLink = finalLink;
       if (Number.isInteger(index) && DATA[index]) DATA[index].resolvedLink = finalLink;
+      if (hasReadLink(currentLink)) markReadLink(finalLink);
     }
     return nextLink;
   } catch {
@@ -1844,6 +2293,55 @@ function detectDeathCause(text = '') {
   ]);
 }
 
+function normalizeIncidentDate(value = '') {
+  const text = cleanCsvValue(value);
+  if (!text) return '';
+
+  const monthMap = {
+    jan: 0, januari: 0,
+    feb: 1, februari: 1,
+    mar: 2, maret: 2,
+    apr: 3, april: 3,
+    mei: 4,
+    jun: 5, juni: 5,
+    jul: 6, juli: 6,
+    agu: 7, ags: 7, agustus: 7,
+    sep: 8, september: 8,
+    okt: 9, oktober: 9,
+    nov: 10, november: 10,
+    des: 11, desember: 11,
+  };
+
+  const numeric = text.match(/\b(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\b/);
+  if (numeric) {
+    const year = Number(numeric[3].length === 2 ? '20' + numeric[3] : numeric[3]);
+    const date = new Date(year, Number(numeric[2]) - 1, Number(numeric[1]));
+    return Number.isNaN(date.getTime()) ? '' : formatDateID(date.toISOString());
+  }
+
+  const named = text.match(/\b(\d{1,2})\s+(Jan(?:uari)?|Feb(?:ruari)?|Mar(?:et)?|Apr(?:il)?|Mei|Jun(?:i)?|Jul(?:i)?|Agu(?:stus)?|Ags|Sep(?:tember)?|Okt(?:ober)?|Nov(?:ember)?|Des(?:ember)?)\s+(\d{4})\b/i);
+  if (named) {
+    const month = monthMap[named[2].toLowerCase()];
+    const date = new Date(Number(named[3]), month, Number(named[1]));
+    return Number.isNaN(date.getTime()) ? '' : formatDateID(date.toISOString());
+  }
+
+  return '';
+}
+
+function detectIncidentDate(text = '', fallbackDate = '') {
+  const sentences = cleanCsvValue(text).split(/(?<=[.!?])\s+|\s+-\s+|\n+/).filter(Boolean);
+  const eventSentences = sentences.filter(sentence => /\b(?:mati|kematian|tewas|bangkai|dibunuh|terbunuh|lahir|kelahiran|melahirkan|bayi)\b/i.test(sentence));
+
+  for (const sentence of [...eventSentences, ...sentences]) {
+    const found = normalizeIncidentDate(sentence);
+    if (found) return found;
+  }
+
+  const fallback = formatDateID(fallbackDate);
+  return fallback === 'Tanggal tidak tersedia' ? '' : fallback;
+}
+
 function buildIncidentCsvRow(item = {}, enriched = {}) {
   const fiveW = enriched.fiveWOneH || {};
   const detailText = cleanCsvValue([
@@ -1851,15 +2349,16 @@ function buildIncidentCsvRow(item = {}, enriched = {}) {
     item.snippet,
     fiveW.ringkasanArtikel,
     fiveW.apa,
+    fiveW.kapan,
     fiveW.bagaimana,
     fiveW.diMana,
     enriched.error,
   ].filter(Boolean).join('. '));
   const sourceLink = safeLink(enriched.finalUrl || getItemLink(item));
-  const incidentDate = formatDateID(item.date);
+  const incidentDate = detectIncidentDate(detailText, item.date);
 
   return {
-    'tanggal temuan': incidentDate === 'Tanggal tidak tersedia' ? '' : incidentDate,
+    'tanggal temuan': incidentDate,
     'kematian/kelahiran': detectEventType(detailText),
     'inisial': pickMatch(detailText, [
       /\borang\s*utan(?:\s+sumatera|\s+kalimantan)?\s+(?:bernama|berinisial|bernama panggilan)?\s*([A-Z][A-Za-zÀ-ÿ'-]{2,20})\b/,
@@ -2006,6 +2505,7 @@ const HERO_ICON_PATHS = {
   download: '<path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>',
   'external-link': '<path d="M13 5h6v6"/><path d="m10 14 9-9"/><path d="M19 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4"/>',
   'layout-sidebar-right': '<path d="M4 5h16v14H4z"/><path d="M15 5v14"/>',
+  'table-options': '<path d="M4 5h16v14H4z"/><path d="M4 10h16"/><path d="M10 5v14"/><path d="M14 15h4"/><path d="M16 13v4"/>',
   x: '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
   'chevron-left': '<path d="m15 18-6-6 6-6"/>',
   'chevron-right': '<path d="m9 18 6-6-6-6"/>',
@@ -2033,11 +2533,11 @@ function applyHeroIcons(root = document) {
   });
 }
 
-applyHeroIcons();
+applyHeroIcons(document.querySelector('.app-content') || document);
 new MutationObserver((mutations) => {
   for (const mutation of mutations) {
     mutation.addedNodes.forEach((node) => {
-      if (node.nodeType === 1) applyHeroIcons(node);
+      if (node.nodeType === 1 && document.querySelector('.app-content')?.contains(node)) applyHeroIcons(node);
     });
   }
 }).observe(document.body, { childList: true, subtree: true });
@@ -2070,7 +2570,7 @@ export default function CrawlingPage() {
       fontsHref="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap"
       extraStylesheets={["https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"]}
       beforeScriptSrc={["https://cdn.jsdelivr.net/npm/flatpickr"]}
-      styleText={`${styleText}\n${monochromeCrawlingTheme}\n${crawlingPolishTheme}`}
+      styleText={`${styleText}\n${monochromeCrawlingTheme}\n${crawlingPolishTheme}\n${plainCrawlingBackgroundTheme}`}
       scriptText={`${scriptText}\n${heroIconAndLinkGuardScript}`}
     >
       {bodyContent}

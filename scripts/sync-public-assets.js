@@ -3,7 +3,6 @@ const path = require('path');
 
 const root = process.cwd();
 const files = [
-  ['src/header.js', 'public/src/header.js'],
   ['src/header.css', 'public/src/header.css'],
   ['src/input.css', 'public/src/input.css'],
   ['src/output.css', 'public/src/output.css'],

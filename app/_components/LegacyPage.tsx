@@ -54,7 +54,6 @@ export default function LegacyPage({
     }
 
     async function runLegacyScripts() {
-      await loadScript('/src/header.js');
       for (const src of beforeScriptSrc) {
         await loadScript(src);
       }
@@ -96,7 +95,6 @@ export default function LegacyPage({
       {extraStylesheets.map((href) => (
         <link key={href} rel="stylesheet" href={href} precedence="default" />
       ))}
-      <link rel="stylesheet" href="/src/header.css" precedence="default" />
       <style
         href={`legacy-style-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`}
         precedence="default"

@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import AppFooter from './_components/AppFooter';
+import AppNavbar from './_components/AppNavbar';
 
 type RootLayoutProps = {
   children: ReactNode;
@@ -8,6 +10,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
+        <link rel="stylesheet" href="/src/header.css" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -50,6 +53,23 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 margin: 0;
                 background: transparent;
                 transition: opacity 0.2s ease, filter 0.2s ease;
+              }
+
+              .app-layout {
+                min-height: 100vh;
+                display: grid;
+                grid-template-rows: 64px minmax(0, 1fr) 34px;
+              }
+
+              .app-content {
+                min-width: 0;
+                min-height: 0;
+              }
+
+              @media (max-width: 720px) {
+                .app-layout {
+                  grid-template-rows: 58px minmax(0, 1fr) 34px;
+                }
               }
 
               body.is-page-leaving {
@@ -116,7 +136,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <div className="app-layout">
+          <header id="appHeader">
+            <AppNavbar />
+          </header>
+          <div className="app-content">{children}</div>
+          <AppFooter />
+        </div>
+      </body>
     </html>
   );
 }

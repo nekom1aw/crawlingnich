@@ -2,6 +2,42 @@
 
 Aplikasi dashboard Next.js untuk melakukan crawling berita, jurnal, preview artikel, ringkasan AI, dan pemantauan isu daerah secara realtime.
 
+## Patch Update / Report Harian
+
+Bagian ini dipakai untuk mencatat update aplikasi per tanggal, supaya mudah dibuat laporan progres.
+
+### 03 Juli 2026
+
+- Layout aplikasi dirapikan menjadi struktur shared: `app/layout.tsx` berisi navbar dan footer, sedangkan halaman crawling dan isu daerah fokus ke isi halaman.
+- Navbar disatukan lewat komponen `app/_components/AppNavbar.tsx`, sehingga menu `Crawling`, `Isu Daerah`, dan `Admin` memakai tampilan yang sama.
+- Tampilan light/dark dibuat lebih konsisten dengan gaya hitam-putih, termasuk hover tombol minimize panel kiri dan kanan.
+- Halaman crawling ditambahkan tombol cancel untuk menghentikan proses crawling yang sedang berjalan.
+- Filter tanggal crawling dibuat default dari 1 Januari tahun berjalan sampai hari ini.
+- Hasil crawling dideduplikasi berdasarkan judul berita agar judul yang sama tidak tampil berulang.
+- Label `PRIORITAS` diganti menjadi `Media Terpercaya`.
+- Crawler ditingkatkan untuk mencari sumber internasional seperti BBC dan The Guardian, tetapi tetap memfilter relevansi keyword agar berita tidak melebar konteksnya.
+- Sumber Betahita diprioritaskan, tetapi validasi keyword sekarang membaca isi artikel utama agar keyword dari bagian rekomendasi bawah halaman tidak ikut dihitung.
+- Preview artikel diperbaiki agar mengambil konten artikel utama dan membuang bagian seperti `Berita lainnya`, `Artikel terkait`, `Baca juga`, rekomendasi, populer, dan latest.
+- Link Google News ditangani lewat resolver agar diarahkan ke URL publisher asli ketika memungkinkan.
+- Download CSV diperbarui untuk kebutuhan data orangutan dengan kolom: `tanggal temuan`, `kematian/kelahiran`, `inisial`, `Liar/Jinak`, `Jenis kelamin`, `umur/Thn`, `Kelas Umur`, `Penyebab Kematian`, `Desa`, `Kecamatan`, `Kabupaten`, `Provinsi`, `N`, `E`, `Keterangan`, dan `Sumber`.
+- Ekstraksi CSV diarahkan membaca isi artikel untuk mencari tanggal kejadian, bukan hanya tanggal publikasi berita.
+- Cache crawling dibuat 1 jam untuk keyword dan filter yang sama.
+- Log crawling ditambahkan untuk mencatat riwayat crawl, jumlah hasil, cache hit, durasi, dan user.
+- Halaman `/admin` ditambahkan untuk melihat riwayat crawling dan status cache.
+- Status berita terbaca dibuat per user/browser dan otomatis kedaluwarsa setelah 1 jam agar tidak bercampur antar user.
+- Halaman `Isu Daerah` dirapikan agar hasil per daerah lebih rapi, bisa discroll, dan tetap stabil ketika jumlah berita banyak.
+
+Template update berikutnya:
+
+```text
+### DD NamaBulan YYYY
+
+- Ringkasan update 1.
+- Ringkasan update 2.
+- Bug yang diperbaiki.
+- Catatan testing: command yang dijalankan dan hasilnya.
+```
+
 ## Fitur
 
 - Crawling berita dari Bing News RSS dan Google News RSS.
@@ -9,12 +45,13 @@ Aplikasi dashboard Next.js untuk melakukan crawling berita, jurnal, preview arti
 - Filter tanggal dan tipe konten.
 - Preview artikel di panel kanan.
 - Halaman khusus **Isu Daerah** di `/isu-daerah`.
+- Halaman khusus **Admin** di `/admin`.
 - Halaman khusus **Summarized AI** di `/summarized-ai`.
 - Ringkasan AI dari kumpulan berita berdasarkan pertanyaan bebas.
 - Output isu daerah dikelompokkan per daerah, misalnya `Riau`, `Kalimantan Timur`, `Papua`.
 - Hasil isu daerah diurutkan dari berita terbaru.
 - Filter untuk menghindari isu kesehatan yang konteksnya artis/selebriti/hiburan.
-- Header shared melalui `src/header.js` dan `src/header.css`.
+- Navbar dan footer shared melalui komponen React di `app/_components`.
 
 ## Teknologi
 
@@ -32,15 +69,18 @@ Aplikasi dashboard Next.js untuk melakukan crawling berita, jurnal, preview arti
 server-next.js            Server Next.js untuk cPanel/hosting Node.js
 next.config.js            Konfigurasi Next.js
 app/                      Route App Router Next.js dan halaman TSX
+app/layout.tsx            Layout shared berisi navbar, konten, dan footer
+app/_components/          Komponen shared seperti AppNavbar dan AppFooter
 app/page.tsx              Halaman utama crawling berita dan jurnal
 app/isu-daerah/page.tsx   Halaman khusus pantau isu daerah
+app/admin/                Halaman admin untuk log crawling dan cache
 app/summarized-ai/page.tsx Halaman khusus ringkasan AI berita
 app/api/*/route.js        API route App Router Next.js
 lib/server/crawl-all.js   Logic server crawling
 lib/server/preview.js     Logic server preview
+lib/server/admin-crawl-logs.js Logic server log crawling admin
 lib/server/regional-issues.js Logic server isu daerah
 lib/server/ai-news-summary.js Logic server ringkasan AI
-src/header.js             Header/menu shared
 src/header.css            Style header shared
 public/                   Asset statis yang dibaca Next.js
 package.json              Script dan dependency Node.js
@@ -73,6 +113,7 @@ Buka:
 ```text
 http://localhost:3000
 http://localhost:3000/isu-daerah
+http://localhost:3000/admin
 http://localhost:3000/summarized-ai
 ```
 
@@ -137,6 +178,14 @@ Payload opsional dengan batas hasil:
 ```
 
 Jika `maxPerRegion` tidak dikirim, aplikasi mengambil semaksimal mungkin dari feed RSS yang tersedia.
+
+### Admin Log Crawling
+
+```text
+GET /api/admin/crawl-logs
+```
+
+Endpoint ini dipakai halaman `/admin` untuk membaca riwayat crawling dan status cache.
 
 ### Summarized AI
 
