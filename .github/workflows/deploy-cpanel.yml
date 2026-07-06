@@ -16,6 +16,7 @@ jobs:
       CPANEL_USER: crak4345
       CPANEL_APP_DIR: /home/crak4345/crawlingnich
       CPANEL_NODE_ENV: /home/crak4345/nodevenv/crawlingnich/20/bin/activate
+      SSH_OPTS: -o BatchMode=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=20 -o ConnectTimeout=30
 
     steps:
       - name: Checkout repository
@@ -56,48 +57,68 @@ jobs:
             --exclude='github-cpanel-rsa*' \
             -czf /tmp/deploy.tar.gz .
 
+      - name: Create production env file
+        run: |
+          {
+            printf '%s\n' 'NVIDIA_API_KEY=${{ secrets.NVIDIA_API_KEY }}'
+            printf '%s\n' 'NVIDIA_MODEL=${{ secrets.NVIDIA_MODEL }}'
+            printf '%s\n' 'NVIDIA_BASE_URL=${{ secrets.NVIDIA_BASE_URL }}'
+            printf '%s\n' 'AI_GATEWAY_API_KEY=${{ secrets.AI_GATEWAY_API_KEY }}'
+            printf '%s\n' 'AI_GATEWAY_MODEL=${{ secrets.AI_GATEWAY_MODEL }}'
+            printf '%s\n' 'GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}'
+            printf '%s\n' 'GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}'
+            printf '%s\n' 'OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}'
+            printf '%s\n' 'OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}'
+          } > /tmp/env.local.production
+
+          if [ -z "${{ secrets.NVIDIA_MODEL }}" ]; then
+            sed -i 's/^NVIDIA_MODEL=$/NVIDIA_MODEL=z-ai\/glm-5.2/' /tmp/env.local.production
+          fi
+
+          if [ -z "${{ secrets.NVIDIA_BASE_URL }}" ]; then
+            sed -i 's#^NVIDIA_BASE_URL=$#NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1#' /tmp/env.local.production
+          fi
+
+      - name: Create remote deploy script
+        run: |
+          cat > /tmp/remote-deploy.sh <<'REMOTE'
+          set -e
+
+          source "__CPANEL_NODE_ENV__"
+          cd "__CPANEL_APP_DIR__"
+
+          tar --no-same-owner -xzf deploy.tar.gz
+          rm -f deploy.tar.gz
+
+          rm -rf node_modules
+
+          npm install --omit=dev --no-audit --no-fund
+
+          mv -f .env.local.upload .env.local
+
+          mkdir -p tmp
+          touch tmp/restart.txt
+
+          rm -f remote-deploy.sh
+          REMOTE
+
+          sed -i "s#__CPANEL_NODE_ENV__#$CPANEL_NODE_ENV#g" /tmp/remote-deploy.sh
+          sed -i "s#__CPANEL_APP_DIR__#$CPANEL_APP_DIR#g" /tmp/remote-deploy.sh
+
       - name: Upload archive to cPanel
         run: |
-          ssh -i ~/.ssh/cpanel_key -p "$CPANEL_PORT" "$CPANEL_USER@$CPANEL_HOST" "mkdir -p '$CPANEL_APP_DIR'"
-          scp -i ~/.ssh/cpanel_key -P "$CPANEL_PORT" \
+          ssh -T $SSH_OPTS -i ~/.ssh/cpanel_key -p "$CPANEL_PORT" "$CPANEL_USER@$CPANEL_HOST" "mkdir -p '$CPANEL_APP_DIR'"
+          scp $SSH_OPTS -i ~/.ssh/cpanel_key -P "$CPANEL_PORT" \
             /tmp/deploy.tar.gz \
             "$CPANEL_USER@$CPANEL_HOST:$CPANEL_APP_DIR/deploy.tar.gz"
+          scp $SSH_OPTS -i ~/.ssh/cpanel_key -P "$CPANEL_PORT" \
+            /tmp/env.local.production \
+            "$CPANEL_USER@$CPANEL_HOST:$CPANEL_APP_DIR/.env.local.upload"
+          scp $SSH_OPTS -i ~/.ssh/cpanel_key -P "$CPANEL_PORT" \
+            /tmp/remote-deploy.sh \
+            "$CPANEL_USER@$CPANEL_HOST:$CPANEL_APP_DIR/remote-deploy.sh"
 
       - name: Extract and install production dependencies
+        timeout-minutes: 20
         run: |
-          ssh -i ~/.ssh/cpanel_key -p "$CPANEL_PORT" "$CPANEL_USER@$CPANEL_HOST" << EOF
-            set -e
-
-            source "$CPANEL_NODE_ENV"
-            cd "$CPANEL_APP_DIR"
-
-            tar --no-same-owner -xzf deploy.tar.gz
-            rm -f deploy.tar.gz
-
-            rm -rf node_modules
-
-            npm install --omit=dev --no-audit --no-fund
-
-            {
-              printf '%s\n' 'NVIDIA_API_KEY=${{ secrets.NVIDIA_API_KEY }}'
-              printf '%s\n' 'NVIDIA_MODEL=${{ secrets.NVIDIA_MODEL }}'
-              printf '%s\n' 'NVIDIA_BASE_URL=${{ secrets.NVIDIA_BASE_URL }}'
-              printf '%s\n' 'AI_GATEWAY_API_KEY=${{ secrets.AI_GATEWAY_API_KEY }}'
-              printf '%s\n' 'AI_GATEWAY_MODEL=${{ secrets.AI_GATEWAY_MODEL }}'
-              printf '%s\n' 'GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}'
-              printf '%s\n' 'GEMINI_MODEL=${{ secrets.GEMINI_MODEL }}'
-              printf '%s\n' 'OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}'
-              printf '%s\n' 'OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}'
-            } > .env.local
-
-            if [ -z "${{ secrets.NVIDIA_MODEL }}" ]; then
-              sed -i 's/^NVIDIA_MODEL=$/NVIDIA_MODEL=z-ai\/glm-5.2/' .env.local
-            fi
-
-            if [ -z "${{ secrets.NVIDIA_BASE_URL }}" ]; then
-              sed -i 's#^NVIDIA_BASE_URL=$#NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1#' .env.local
-            fi
-
-            mkdir -p tmp
-            touch tmp/restart.txt
-          EOF
+          ssh -T $SSH_OPTS -i ~/.ssh/cpanel_key -p "$CPANEL_PORT" "$CPANEL_USER@$CPANEL_HOST" "bash '$CPANEL_APP_DIR/remote-deploy.sh'"
