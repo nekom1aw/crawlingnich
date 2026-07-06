@@ -44,6 +44,13 @@ jobs:
           chmod 600 ~/.ssh/cpanel_key
           ssh-keyscan -p "$CPANEL_PORT" "$CPANEL_HOST" >> ~/.ssh/known_hosts
 
+      - name: Validate required AI secret
+        run: |
+          if [ -z "${{ secrets.NVIDIA_API_KEY }}" ]; then
+            echo "NVIDIA_API_KEY GitHub Secret masih kosong. Isi dulu di Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
       - name: Create deploy archive
         run: |
           tar \
@@ -63,6 +70,10 @@ jobs:
             printf '%s\n' 'NVIDIA_API_KEY=${{ secrets.NVIDIA_API_KEY }}'
             printf '%s\n' 'NVIDIA_MODEL=${{ secrets.NVIDIA_MODEL }}'
             printf '%s\n' 'NVIDIA_BASE_URL=${{ secrets.NVIDIA_BASE_URL }}'
+            printf '%s\n' 'NVIDIA_TIMEOUT_MS=${{ secrets.NVIDIA_TIMEOUT_MS }}'
+            printf '%s\n' 'NVIDIA_MAX_TOKENS=${{ secrets.NVIDIA_MAX_TOKENS }}'
+            printf '%s\n' 'NVIDIA_STREAM=${{ secrets.NVIDIA_STREAM }}'
+            printf '%s\n' 'AI_SUMMARY_ARTICLE_LIMIT=${{ secrets.AI_SUMMARY_ARTICLE_LIMIT }}'
             printf '%s\n' 'AI_GATEWAY_API_KEY=${{ secrets.AI_GATEWAY_API_KEY }}'
             printf '%s\n' 'AI_GATEWAY_MODEL=${{ secrets.AI_GATEWAY_MODEL }}'
             printf '%s\n' 'GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}'
@@ -77,6 +88,22 @@ jobs:
 
           if [ -z "${{ secrets.NVIDIA_BASE_URL }}" ]; then
             sed -i 's#^NVIDIA_BASE_URL=$#NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1#' /tmp/env.local.production
+          fi
+
+          if [ -z "${{ secrets.NVIDIA_TIMEOUT_MS }}" ]; then
+            sed -i 's/^NVIDIA_TIMEOUT_MS=$/NVIDIA_TIMEOUT_MS=240000/' /tmp/env.local.production
+          fi
+
+          if [ -z "${{ secrets.NVIDIA_MAX_TOKENS }}" ]; then
+            sed -i 's/^NVIDIA_MAX_TOKENS=$/NVIDIA_MAX_TOKENS=2048/' /tmp/env.local.production
+          fi
+
+          if [ -z "${{ secrets.NVIDIA_STREAM }}" ]; then
+            sed -i 's/^NVIDIA_STREAM=$/NVIDIA_STREAM=1/' /tmp/env.local.production
+          fi
+
+          if [ -z "${{ secrets.AI_SUMMARY_ARTICLE_LIMIT }}" ]; then
+            sed -i 's/^AI_SUMMARY_ARTICLE_LIMIT=$/AI_SUMMARY_ARTICLE_LIMIT=12/' /tmp/env.local.production
           fi
 
       - name: Create remote deploy script
@@ -95,6 +122,9 @@ jobs:
           npm install --omit=dev --no-audit --no-fund
 
           mv -f .env.local.upload .env.local
+          test -s .env.local
+          grep -q '^NVIDIA_API_KEY=nvapi-' .env.local
+          grep -q '^NVIDIA_MODEL=z-ai/glm-5.2' .env.local
 
           mkdir -p tmp
           touch tmp/restart.txt
