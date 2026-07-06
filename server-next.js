@@ -1,6 +1,9 @@
 const { createServer } = require('http');
 const { parse } = require('url');
 const next = require('next');
+const { loadEnvConfig } = require('@next/env');
+
+loadEnvConfig(process.cwd());
 
 const dev = process.env.NEXT_DEV === '1' || process.env.NODE_ENV === 'development';
 const hostname = process.env.HOSTNAME || '0.0.0.0';
