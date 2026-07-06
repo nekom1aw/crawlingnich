@@ -91,7 +91,7 @@ jobs:
           fi
 
           if [ -z "${{ secrets.NVIDIA_TIMEOUT_MS }}" ]; then
-            sed -i 's/^NVIDIA_TIMEOUT_MS=$/NVIDIA_TIMEOUT_MS=240000/' /tmp/env.local.production
+            sed -i 's/^NVIDIA_TIMEOUT_MS=$/NVIDIA_TIMEOUT_MS=55000/' /tmp/env.local.production
           fi
 
           if [ -z "${{ secrets.NVIDIA_MAX_TOKENS }}" ]; then

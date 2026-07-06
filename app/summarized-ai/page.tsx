@@ -420,6 +420,26 @@ function setLoadingState(running) {
   status.textContent = running ? 'thinking' : 'ready';
 }
 
+async function readApiJson(response) {
+  const text = await response.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    const plain = text
+      .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')
+      .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\\s+/g, ' ')
+      .trim()
+      .slice(0, 220);
+    throw new Error(
+      plain
+        ? \`Server mengembalikan HTML/error page, bukan JSON (HTTP \${response.status}). \${plain}\`
+        : \`Server mengembalikan respons kosong atau bukan JSON (HTTP \${response.status}).\`
+    );
+  }
+}
+
 async function sendMessage() {
   if (isLoading) return;
 
@@ -440,7 +460,7 @@ async function sendMessage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
     });
-    const data = await response.json();
+    const data = await readApiJson(response);
     if (!response.ok) throw new Error(data.detail || data.error || 'Gagal membuat ringkasan');
 
     const provider = data.provider || (data.aiEnabled ? 'ai' : 'fallback');
