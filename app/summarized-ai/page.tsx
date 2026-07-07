@@ -117,6 +117,11 @@ body {
   line-height: 1.72;
   white-space: pre-wrap;
 }
+.message-duration {
+  color: var(--text3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
 .message.user .bubble {
   background: var(--inverse);
   color: var(--inverse-text);
@@ -356,6 +361,14 @@ function formatDateID(dateStr) {
   return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function formatDuration(ms) {
+  const seconds = Math.max(0, ms / 1000);
+  if (seconds < 60) return \`\${seconds.toFixed(1)} detik\`;
+  const minutes = Math.floor(seconds / 60);
+  const rest = Math.round(seconds % 60);
+  return \`\${minutes} menit \${rest} detik\`;
+}
+
 function scrollMessagesToBottom() {
   const list = document.getElementById('messagesList');
   requestAnimationFrame(() => { list.scrollTop = list.scrollHeight; });
@@ -377,6 +390,7 @@ function renderMessages() {
           \${msg.meta ? \`<span>\${escapeHtml(msg.meta)}</span>\` : ''}
         </div>
         <div class="bubble">\${escapeHtml(msg.content || '')}</div>
+        \${msg.duration ? \`<div class="message-duration">Waktu proses: \${escapeHtml(msg.duration)}</div>\` : ''}
       </article>
     \`;
   }).join('');
@@ -440,6 +454,63 @@ async function readApiJson(response) {
   }
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchSummaryJob(jobId) {
+  const response = await fetch(\`/api/ai-news-summary?jobId=\${encodeURIComponent(jobId)}\`, {
+    method: 'GET',
+    headers: { 'Accept': 'application/json' },
+  });
+  const data = await readApiJson(response);
+  if (!response.ok) throw new Error(data.error || data.detail || 'Gagal membaca status ringkasan');
+  return data;
+}
+
+async function waitForSummaryJob(jobId, loadingId, startedAt) {
+  const maxWaitMs = 10 * 60 * 1000;
+
+  while (Date.now() - startedAt < maxWaitMs) {
+    await sleep(1000);
+    const data = await fetchSummaryJob(jobId);
+    CURRENT_SOURCES = Array.isArray(data.results) ? data.results : CURRENT_SOURCES;
+    renderSources();
+
+    if (data.status === 'complete') {
+      const idx = CHAT.findIndex((msg) => msg.id === loadingId);
+      if (idx >= 0) {
+        CHAT[idx] = {
+          role: 'assistant',
+          content: data.summary || 'Ringkasan tidak tersedia.',
+          meta: \`\${CURRENT_SOURCES.length} berita | \${data.provider || 'nvidia'}\`,
+          duration: formatDuration(Date.now() - startedAt),
+        };
+      }
+      document.getElementById('aiStatus').textContent = data.provider || 'nvidia';
+      return;
+    }
+
+    if (data.status === 'error') {
+      throw new Error(data.summary || data.error || 'NVIDIA gagal membuat ringkasan.');
+    }
+
+    const elapsed = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+    const idx = CHAT.findIndex((msg) => msg.id === loadingId);
+    if (idx >= 0) {
+      CHAT[idx] = {
+        role: 'assistant',
+        content: \`NVIDIA masih menyusun ringkasan... (\${elapsed} detik)\`,
+        loading: true,
+        id: loadingId,
+      };
+      renderMessages();
+    }
+  }
+
+  throw new Error('NVIDIA belum selesai setelah 10 menit.');
+}
+
 async function sendMessage() {
   if (isLoading) return;
 
@@ -450,7 +521,8 @@ async function sendMessage() {
   input.value = '';
   CHAT.push({ role: 'user', content: query });
   const loadingId = Date.now();
-  CHAT.push({ role: 'assistant', content: 'Mencari berita dan menyusun ringkasan...', loading: true, id: loadingId });
+  const startedAt = Date.now();
+  CHAT.push({ role: 'assistant', content: 'Memahami permintaan...', loading: true, id: loadingId });
   renderMessages();
   setLoadingState(true);
 
@@ -465,23 +537,44 @@ async function sendMessage() {
 
     const provider = data.provider || (data.aiEnabled ? 'ai' : 'fallback');
     CURRENT_SOURCES = Array.isArray(data.results) ? data.results : [];
+    renderSources();
+
+    if (data.status === 'processing' && data.jobId) {
+      const idx = CHAT.findIndex((msg) => msg.id === loadingId);
+      if (idx >= 0) {
+        CHAT[idx] = {
+          role: 'assistant',
+          content: 'NVIDIA sedang menyusun ringkasan... (0 detik)',
+          loading: true,
+          id: loadingId,
+        };
+        renderMessages();
+      }
+      await waitForSummaryJob(data.jobId, loadingId, startedAt);
+      return;
+    }
+
     const idx = CHAT.findIndex((msg) => msg.id === loadingId);
     if (idx >= 0) {
       CHAT[idx] = {
         role: 'assistant',
         content: data.summary || 'Ringkasan tidak tersedia.',
         meta: \`\${CURRENT_SOURCES.length} berita | \${provider}\`,
+        duration: formatDuration(Date.now() - startedAt),
       };
     }
     document.getElementById('aiStatus').textContent = provider;
-    renderSources();
   } catch (err) {
     const idx = CHAT.findIndex((msg) => msg.id === loadingId);
+    const message = err.message === 'Failed to fetch'
+      ? 'Koneksi ke API putus sebelum server memberi jawaban. Coba ulangi, atau cek server sedang berjalan.'
+      : (err.message || 'Gagal membuat ringkasan.');
     if (idx >= 0) {
       CHAT[idx] = {
         role: 'assistant',
-        content: err.message || 'Gagal membuat ringkasan.',
+        content: message,
         meta: 'error',
+        duration: formatDuration(Date.now() - startedAt),
       };
     }
     document.getElementById('aiStatus').textContent = 'error';
