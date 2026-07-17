@@ -61,12 +61,15 @@ function MapPinIcon() {
   );
 }
 
-function SparklesIcon() {
+function SlidersIcon() {
   return (
     <svg className="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3Z" />
-      <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z" />
-      <path d="M5 14l.7 1.8L7.5 16.5l-1.8.7L5 19l-.7-1.8-1.8-.7 1.8-.7L5 14Z" />
+      <path d="M4 7h10" />
+      <path d="M18 7h2" />
+      <path d="M16 5v4" />
+      <path d="M4 17h2" />
+      <path d="M10 17h10" />
+      <path d="M8 15v4" />
     </svg>
   );
 }
@@ -74,7 +77,7 @@ function SparklesIcon() {
 const navItems = [
   { href: '/', label: 'Crawling', icon: <RadarIcon /> },
   { href: '/isu-daerah', label: 'Isu Daerah', icon: <MapPinIcon /> },
-  { href: '/summarized-ai', label: 'Summarized AI', icon: <SparklesIcon /> },
+  { href: '/crawling-custom', label: 'Crawling Custom', icon: <SlidersIcon /> },
 ];
 
 export default function AppNavbar() {

@@ -85,6 +85,30 @@ body {
   background: var(--panel2);
   text-transform: uppercase;
 }
+.crawl-source-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel2);
+  color: var(--text2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.crawl-source-bar.is-visible {
+  display: flex;
+}
+.crawl-source-bar button {
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  padding: 6px 9px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+}
 .messages {
   min-height: 0;
   overflow-y: auto;
@@ -308,6 +332,10 @@ const bodyHtml = `
       </div>
       <div class="chat-status" id="aiStatus">ready</div>
     </header>
+    <div class="crawl-source-bar" id="crawlSourceBar">
+      <span id="crawlSourceText">0 hasil crawling siap diringkas</span>
+      <button id="clearCrawlSourceBtn" type="button">Lepas sumber</button>
+    </div>
 
     <section class="messages" id="messagesList" aria-label="Percakapan AI"></section>
 
@@ -334,7 +362,9 @@ const bodyHtml = `
 const scriptText = `
 let CHAT = [];
 let CURRENT_SOURCES = [];
+let CURRENT_CRAWL_PACKAGE = null;
 let isLoading = false;
+const CRAWL_SUMMARY_STORAGE_KEY = 'crawling-summary-source';
 
 function escapeHtml(value = '') {
   return String(value)
@@ -421,6 +451,21 @@ function renderSources() {
       </article>
     \`;
   }).join('');
+}
+
+function renderCrawlSourceBar() {
+  const bar = document.getElementById('crawlSourceBar');
+  const text = document.getElementById('crawlSourceText');
+  if (!bar || !text) return;
+
+  if (!CURRENT_CRAWL_PACKAGE || !Array.isArray(CURRENT_CRAWL_PACKAGE.items) || !CURRENT_CRAWL_PACKAGE.items.length) {
+    bar.classList.remove('is-visible');
+    text.textContent = '0 hasil crawling siap diringkas';
+    return;
+  }
+
+  bar.classList.add('is-visible');
+  text.textContent = CURRENT_CRAWL_PACKAGE.items.length + ' hasil crawling dipakai sebagai sumber ringkasan';
 }
 
 function setLoadingState(running) {
@@ -530,7 +575,11 @@ async function sendMessage() {
     const response = await fetch('/api/ai-news-summary', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({
+        query,
+        sourceMode: CURRENT_CRAWL_PACKAGE ? 'crawl-results' : 'search',
+        sourceItems: CURRENT_CRAWL_PACKAGE?.items || [],
+      }),
     });
     const data = await readApiJson(response);
     if (!response.ok) throw new Error(data.detail || data.error || 'Gagal membuat ringkasan');
@@ -587,14 +636,53 @@ async function sendMessage() {
 function resetChat() {
   CHAT = [];
   CURRENT_SOURCES = [];
+  CURRENT_CRAWL_PACKAGE = null;
+  sessionStorage.removeItem(CRAWL_SUMMARY_STORAGE_KEY);
   document.getElementById('aiPrompt').value = '';
   document.getElementById('aiStatus').textContent = 'ready';
   renderMessages();
   renderSources();
+  renderCrawlSourceBar();
+}
+
+function loadCrawlPackage() {
+  try {
+    const raw = sessionStorage.getItem(CRAWL_SUMMARY_STORAGE_KEY);
+    if (!raw) return null;
+    const pkg = JSON.parse(raw);
+    if (!pkg || !Array.isArray(pkg.items) || !pkg.items.length) return null;
+    return {
+      ...pkg,
+      items: pkg.items.slice(0, 80),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function initCrawlSourceMode() {
+  const params = new URLSearchParams(window.location.search);
+  const shouldUseCrawl = params.get('from') === 'crawl';
+  const pkg = loadCrawlPackage();
+  if (!shouldUseCrawl || !pkg) return;
+
+  CURRENT_CRAWL_PACKAGE = pkg;
+  CURRENT_SOURCES = pkg.items;
+  document.getElementById('aiPrompt').value = pkg.query || 'Ringkas dan analisis hasil crawling berita ini secara fleksibel.';
+  renderSources();
+  renderCrawlSourceBar();
+  setTimeout(sendMessage, 80);
 }
 
 document.getElementById('sendBtn').addEventListener('click', sendMessage);
 document.getElementById('clearBtn').addEventListener('click', resetChat);
+document.getElementById('clearCrawlSourceBtn').addEventListener('click', () => {
+  CURRENT_CRAWL_PACKAGE = null;
+  CURRENT_SOURCES = [];
+  sessionStorage.removeItem(CRAWL_SUMMARY_STORAGE_KEY);
+  renderSources();
+  renderCrawlSourceBar();
+});
 document.getElementById('aiPrompt').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
@@ -604,6 +692,8 @@ document.getElementById('aiPrompt').addEventListener('keydown', (e) => {
 
 renderMessages();
 renderSources();
+renderCrawlSourceBar();
+initCrawlSourceMode();
 `;
 
 export default function SummarizedAiPage() {
