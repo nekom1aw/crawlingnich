@@ -74,10 +74,20 @@ function SlidersIcon() {
   );
 }
 
+function TreeIcon() {
+  return (
+    <svg className="nav-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m12 3-5 7h3l-4 6h5v5" />
+      <path d="m12 3 5 7h-3l4 6h-5v5" />
+    </svg>
+  );
+}
+
 const navItems = [
   { href: '/', label: 'Crawling', icon: <RadarIcon /> },
   { href: '/isu-daerah', label: 'Isu Daerah', icon: <MapPinIcon /> },
   { href: '/crawling-custom', label: 'Crawling Custom', icon: <SlidersIcon /> },
+  { href: '/menu-kemenhut', label: 'Kemenhut', icon: <TreeIcon /> },
 ];
 
 export default function AppNavbar() {
@@ -118,7 +128,7 @@ export default function AppNavbar() {
           {navItems.map((item) => (
             <a
               key={item.href}
-              className={`nav-link${activePath === item.href ? ' active' : ''}`}
+              className={`nav-link${activePath === item.href || (item.href !== '/' && activePath.startsWith(`${item.href}/`)) ? ' active' : ''}`}
               href={item.href}
               onClick={(event) => handleNavClick(event, item.href)}
             >
