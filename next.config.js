@@ -1,3 +1,4 @@
 module.exports = {
-  poweredByHeader: false
+  poweredByHeader: false,
+  output: 'standalone'
 };

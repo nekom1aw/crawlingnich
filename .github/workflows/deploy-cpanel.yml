@@ -53,16 +53,17 @@ jobs:
 
       - name: Create deploy archive
         run: |
-          tar \
-            --exclude='.git' \
-            --exclude='.github' \
-            --exclude='.next/cache' \
-            --exclude='node_modules' \
-            --exclude='.env' \
-            --exclude='.env.local' \
-            --exclude='github-cpanel-key*' \
-            --exclude='github-cpanel-rsa*' \
-            -czf /tmp/deploy.tar.gz .
+          set -e
+          mkdir -p /tmp/deploy-package/.next
+
+          cp -a .next/standalone/. /tmp/deploy-package/
+          cp -a .next/static /tmp/deploy-package/.next/static
+          cp -a public /tmp/deploy-package/public
+
+          # cPanel sudah dikonfigurasi memakai server-next.js sebagai startup file.
+          cp -f .next/standalone/server.js /tmp/deploy-package/server-next.js
+
+          tar -C /tmp/deploy-package -czf /tmp/deploy.tar.gz .
 
       - name: Create production env file
         run: |
@@ -83,12 +84,12 @@ jobs:
           source "__CPANEL_NODE_ENV__"
           cd "__CPANEL_APP_DIR__"
 
+          # Paket standalone sudah membawa dependency runtime dari GitHub Actions.
+          # Bersihkan runtime lama agar tidak ada modul/chunk dari deploy sebelumnya.
+          rm -rf .next node_modules
+
           tar --no-same-owner -xzf deploy.tar.gz
           rm -f deploy.tar.gz
-
-          rm -rf node_modules
-
-          npm install --omit=dev --no-audit --no-fund
 
           mv -f .env.local.upload .env.local
           test -s .env.local
@@ -117,7 +118,7 @@ jobs:
             /tmp/remote-deploy.sh \
             "$CPANEL_USER@$CPANEL_HOST:$CPANEL_APP_DIR/remote-deploy.sh"
 
-      - name: Extract and install production dependencies
-        timeout-minutes: 20
+      - name: Extract standalone build and restart application
+        timeout-minutes: 5
         run: |
           ssh -T $SSH_OPTS -i ~/.ssh/cpanel_key -p "$CPANEL_PORT" "$CPANEL_USER@$CPANEL_HOST" "bash '$CPANEL_APP_DIR/remote-deploy.sh'"
